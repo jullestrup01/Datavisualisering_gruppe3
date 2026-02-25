@@ -1,0 +1,3203 @@
+---
+lang: da
+format:
+  pdf:
+    documentclass: article
+    toc: false
+    toc-title: Indholdsfortegnelse
+    toc-depth: 3
+    number-sections: true
+    number-depth: 3
+    titlepage: true
+    lof: false
+    lot: false
+    fig-pos: "H"
+    linkcolor: black
+    urlcolor: black
+    citecolor: black
+    filecolor: black
+bibliography: VFF_projekt.bib
+header-includes:
+  - \usepackage[a4paper, top=30mm, bottom=30mm, left=20mm, right=20mm, heightrounded]{geometry}
+  - \usepackage{booktabs}
+  - \usepackage{makecell}
+  - \usepackage{pdfpages}
+  - \AtBeginDocument{\includepdf[pages={1}]{vff_forside.pdf}}
+crossref:
+  fig-prefix: ""
+  sec-prefix: ""
+  tbl-prefix: ""
+  eq-prefix: ""
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+```{r}
+#| label: Setup
+#| echo: false
+#| eval: true
+
+# Options
+options(OutDec = ",")
+
+# Pakker
+pacman::p_load("knitr", "tinytex", "tidyverse") 
+
+
+```
+
+\pagenumbering{gobble} 
+\tableofcontents 
+\newpage 
+\listoffigures 
+\newpage 
+\pagenumbering{arabic} 
+\setcounter{page}{1}
+
+# Indledning {#sec-indledning}
+
+I takt med at fodboldklubber i stigende grad anvender data til
+strategisk og operationel planlægning, ønsker Viborg F.F. (VFF) at
+styrke brugen af data til at understøtte beslutninger i klubben. Under
+et interview og en rundvisning i VFF blev det tydeligt, at klubben især
+ønsker at anvende data i den kommercielle afdeling for at optimere
+planlægningen, fordelingen af ressourcer og personale ved
+hjemmekampe.[@transskriberede_interviews]
+
+Klubben ønsker desuden at bevæge sig mod mere automatiserede løsninger,
+hvor data indsamles og præsenteres løbende, så beslutninger kan træffes
+på et mere oplyst og objektivt grundlag.[@transskriberede_interviews]
+
+I dag baseres mange beslutninger i den kommercielle afdeling på enkelte
+medarbejderes erfaringer og vurderinger. Denne afhængighed gør driften
+sårbar, og skaber et behov for at understøtte beslutninger med data frem
+for intuition.Der ses derfor et tydeligt ønske fra både driftschefen og
+ledelsen om, at fremtidige beslutninger i højere grad skal baseres på
+fakta og analyser, samtidig vil det understøtte klubbens ambition om at
+arbejde mere datadrevet og mindre
+personafhængigt.[@transskriberede_interviews]
+
+# Problemformulering {#sec-problemformulering}
+
+“Hvordan kan VFF forudsige tilskuerantallet til deres superliga
+hjemmekampe, og hvordan kan løsningen implementeres i organisationen ud
+fra deres nuværende datamodenhed?”
+
+# Afgrænsning {#sec-afgrænsning}
+
+Vi afgrænser opgaven til at koncentrere sig om den businessunit i VFF,
+der hedder Stadion- og Event. Desuden tager opgaven udgangspunkt i
+tilgængelig historisk data, hvor VFF har været i superligaen. Specifikt
+anvendes data fra 2000 og frem, da et centralt datasæt – antal solgte
+billetter 10, 7 og 3 dage før kamp, først blev registreret fra dette
+tidspunkt.
+
+# Videnskabsteoretisk tilgang {#sec-videnskabsteoretisk-tilgang}
+
+Opgaven kombinerer hermeneutisk, fænomenologisk og positivistisk
+videnskabsteori for at belyse både de menneskelige og tekniske
+dimensioner af projektet.[@liv_egholm_2014]
+
+Hermeneutikken danner grundlaget for opgavens videnskabsteoretiske
+ståsted. Formålet er ikke kun at udvikle en teknisk model, men også at
+forstå, hvordan denne kan implementeres i organisationen. Tilgangen
+muliggør en fortolkning af de kvalitative data fra interviewet med VFF,
+hvor medarbejdernes udsagn forstås i relation til helheden, herunder
+organisationens kultur, samarbejde og datamodenhed. [@liv_egholm_2014]
+
+Hermeneutikken anerkender også at vi som undersøgere har en
+forforståelse, som påvirker tolkningen. Tilgangen er velegnet i arbejdet
+med semistrukturerede interviews, hvor mening skabes i dialogen mellem
+interviewer og deltager. Men da vi også ønsker at forstå medarbejdernes
+erfaringer og barrierer i forhold til det datadrevne arbejde, og dermed
+skabe en praktisk forståelse for implementeringen af modellen, har vi
+valgt også at inddrage det fænomenologiske paradigme. [@liv_egholm_2014]
+
+Fænomenologien supplerer hermeneutikken, ved at undersøge medarbejdernes
+subjektive oplevelse af arbejdet med data og overgangen til en mere
+datadrevet kultur. Fokus ligger i denne sammenhæng på deres erfaringer
+og forståelse af udfordringer, som personafhængighed og videndeling.
+Denne tilgang bidrager til at afdække en ekstra dimension i
+implementeringen, og fungerer som et kvalitativt supplement til den
+tekniske del af opgaven. [@liv_egholm_2014]
+
+Positivismen danner grundlaget for den tekniske del af projektet, hvor
+der udvikles en Machine Learning-model til forudsigelse af tilskuertal.
+Tilgangen bygger på en antagelse om en objektiv virkelighed, hvor
+sammenhænge og mønstre kan identificeres gennem kvantitativ analyse.
+Kodningen og modelleringen udføres induktivt, ud fra eksisterende data,
+med henblik på at afdække årsagssammenhænge mellem faktorer og
+tilskuertal, dog med et abduktivt islæt, da vi har en forforståelse af
+hvilke data der er relevante at inddrage. [@liv_egholm_2014]
+
+# Metode {#sec-metode}
+
+Forudsigelsesmodellen udvikles i R-Studio, som muliggør indsamling,
+bearbejdning og analyse af data på en systematisk måde. 
+
+Der anvendes som udgangspunkt lineær regression, for at undersøge
+sammenhængen mellem en responsvariabel og en række forklarende variable.
+Metoden er valgt, fordi den er fortolkelig og anvendelig i en
+organisatorisk kontekst. Der vil blive testet forskellige metoder til
+modeltilpasning, for at identificere den mest præcise og robuste
+model.[@ISLR2]
+
+CRISP-DM  [@bang_2025] anvendes som inspiration, hvor
+forretningsforståelsen tager udgangspunkt i VFF’s behov for mere præcis
+planlægning af ressourcer og bemanding ved hjemmekampe.
+
+For at vurdere VFF’s nuværende niveau af datamodenhed, anvendes
+Alexandra Instituttets model for datamodenhed. Denne vurdering skal
+danne grundlag for, hvordan forudsigelsesmodellen realistisk kan
+implementeres i organisationen.[@datamodenhed_alexandra]
+
+Derudover vil AI sprogmodeller blive anvendt som sparringspartner, til 
+at hjælpe med formuleringer, analyser, og udvikling af koden til
+forudsigelsesmodellen. [@openai_chatgpt_2025]
+
+# Samlet formål {#sec--samlet-formål}
+
+Projektets overordnede formål, er at kombinere teknisk og organisatorisk
+viden for at udvikle en løsning til forudsigelse af tilskuerantal, der
+både fungerer i praksis og forankres i VFF’s organisation. Projektet
+viser, hvordan dataanalyse og Machine Learning kan anvendes til at
+understøtte beslutningsprocesser i VFF.
+
+\newpage
+
+# Analyse {#sec-analyse}
+
+Datagrundlaget består af data fra interne og eksterne kilder, som er
+renset og beriget i en SQLite-database, herunder konstruktion af laggede
+variable, historiske gennemsnit for tilskuertal og andre beregninger.
+
+## Indledende model
+
+Som indledende analyse estimeres en klassisk lineær regressionsmodel,
+for at undersøge sammenhængen mellem tilskuertal og de forklarende
+variabler. De diagnostiske tests indikerer metodiske udfordringer,
+herunder udbredt multikollinearitet og høj korrelation mellem flere
+forklarende variabler. De mest korrellerende variable er max_temp og
+middel_temp, som det fremgår her:
+
+![Multikollinearitet](fig/000010.png){#Collinearity fig-align="center"
+width="447"}
+
+Residualerne viser ikke heteroskedasticitet, men de er
+ikke-normalfordelte , hvilket primært påvirker statistiske tests og ikke
+forudsigelserne, disse forhold kan ses af nedenstående figurer:
+
+![Normalitet](fig/Normalitet.png){#Normalitet fig-align="center"
+width="447"}
+
+![Heteroskedasticitet](fig/Hetroelasticitet.png){#heteroskedasticitet
+fig-align="center" width="447"}
+
+Disse forhold indikerer, at den klassiske lineære regressionsmodel har
+begrænset egnethed som endelig forudsigelsesmodel. [@ISLR2]
+
+Derfor afprøves alternative modeller, som i forskellig grad håndterer
+multikollinearitet. De fleste modeller evalueres ved hjælp af K-fold
+cross-validation, hvor test-RMSE anvendes som primært performancemål,
+mens modelkompleksitet vurderes ud fra antallet af anvendte forklarende
+variabler. Forward og backward stepwise selection vurderes på et fast
+trænings-/test-split, hvilket giver et alternativt CV-perspektiv, men
+bedste praksis er at anvende den samme cross-validation metode på alle
+modeller.
+
+## Modelperformance på tværs af tidshorisonter {#sec-modelperformance-på-tværs-af-tidshorisonter}
+
+Analysen opdeles i fire tidshorisonter for at vurdere modellernes evne
+til at forudsige tilskuertal på forskellige tidspunkter frem mod
+kampstart: flere måneder før, 10 dage før, 7 dage før og 3 dage før
+kamp. (Se: @sec-samlet-tabel)
+
+![RMSE vs Antal
+variabler](fig/RMSE%20vs%20Antal%20variabler.png){fig-align="center"
+width="447"}
+
+### Flere måneder før kampstart {#sec-flere-måneder-før-kampstart}
+
+Simple modeller som stepwise selection klarer sig bedst langt fra kamp,
+mens mere komplekse modeller bevarer flere forklaringsvariabler.
+
+![Flere måneder foer](fig/Flere%20måneder%20før.png){fig-align="center"
+width="380"}
+
+### 10 dage før kamp {#sec-10-dage-før-kamp}
+
+Tættere på kamp bliver det tydeligt, at modeller, der bevarer alle
+forklaringsvariable, er mere robuste, selvom kompleksiteten stiger.
+
+![10 dage foer](fig/10%20dage%20før.png){fig-align="center" width="380"}
+
+### 7 dage før kamp {#sec-7-dage-før-kamp}
+
+Kampnære variable får større betydning, og modeller, der bevarer flere
+forklaringsvariable, bliver mere stabile.
+
+![7 dage foer](fig/7%20dage%20før.png){fig-align="center" width="380"}
+
+### 3 dage før kamp {#sec-3-dage-før-kamp}
+
+Tæt på kamp er aktuelle variabler afgørende, og modeller der bevarer
+alle forklaringsvariable, giver mest stabil performance.
+
+![3 dage foer](fig/3%20dage%20før.png){fig-align="center" width="380"}
+
+## Modelafvejning {#sec-modelafvejning}
+
+Resultaterne viser, at modeller med variabelreduktion kan opnå lav RMSE
+på enkelte tidspunkter, men samtidig reducerer mange
+forklaringsvariable, hvilket mindsker robusthed tæt på kamp. Når
+formålet er at forudsige tilskuertallet, bliver det tydeligt, at
+variabler som modstander har stor betydning. Derfor prioriteres
+modeller, der bevarer alle relevante forklaringsvariable.
+
+![Model performance på alle
+datasæt](fig/Model%20performance%20på%20alle%20datasæt.png){fig-align="center"
+width="403"}
+
+**Forward og Backward subset** selection klarer sig godt flere måneder
+før kamp, men frasorterer vigtige forklaringsvariable og er derfor ikke
+relevante. (se @sec-backward-subset-selection,
+@sec-forward-subset-selection og @sec-opsamling-backward-og-forward)
+
+![Backward og forward
+variabler](fig/backward%20og%20forward%20variabler.png){fig-align="center"
+width="414"}
+
+**BestSubset** selection klarer sig bedre end Forward/Backward på
+tidspunkter tættere på kamp, men reducerer stadig antallet af
+forklaringsvariable, hvorfor den heller ikke vælges. (se
+@sec-best-subset-selection og @sec-opsamling-best-subset)
+
+![Best subset](fig/Best%20subset%20.png){fig-align="center" width="437"}
+
+**LASSO** reducerer også antallet af variable gennem shrinkage, men
+risikoen for at fjerne kontekstuelt vigtige variable gør den heller ikke
+optimal. (se @sec-oversigt-over-lasso-udvalgte-variabler og
+@sec-opsamling-paa-lasso-og-ridge)
+
+Modeller, der bevarer alle forklaringsvariable, som PCR, PLS og Ridge,
+håndterer multikollinearitet og giver stabil performance. [@ISLR2]
+
+**PCR** tager dog ikke højde for responsvariablen tilskuertal, hvilket
+kan begrænse prædiktiv styrke. (se @sec-pcr-modellen og
+@sec-opsamling-pcr)
+
+**PLS** tager højde for responsvariablen, men er mere kompleks, fordi
+alle variable transformeres til komponenter. (se @sec-pls-modellen og
+@sec-opsamling-pls)
+
+**Ridge** bevarer alle originale variable og justerer kun
+koefficienternes størrelse (shrinkage), hvilket giver både stabilitet,
+fortolkelighed og robuste forudsigelser. (se @sec-ridge-funktion-koersel
+og @sec-lassoridge)
+
+På baggrund af disse resultater vælges Ridge som endelig model, da den
+sikrer pålidelige forudsigelser og bibeholdelse af de vigtigste
+determinanter for tilskuertallet, herunder modstander.
+
+## Endelig model og resultat {#sec-endelig-model-og-resultat}
+
+Ridge-modellen, estimeret flere måneder før kamp, anvendes til
+forudsigelse af tilskuertal til den kommende kamp mod BIF i februar. Ved
+at opstille de kendte parametre for kampen estimeres et forventet
+tilskuertal på ca. 7309(se @sec-ridge-prediction-model)
+
+# Implementering i VFF {#sec-implementering-i-vff}
+
+Med udgangspunkt i Alexandra-instituttets datamodenhedsmodel
+[@datamodenhed_alexandra]vurderes VFF at befinde sig på niveau 2.3, hvor
+data anvendes operationelt, men endnu ikke er fuldt integreret som
+strategisk beslutningsgrundlag. [@transskriberede_interviews]
+
+I denne kontekst vurderes Ridge som velegnet, da modellen er robust over
+for multikollinearitet og støj, i et datasæt med mange korrelerede
+forklaringsvariable. Modellens stabilitet og begrænsede kompleksitet gør
+den realistisk at anvende i en organisation, hvor data primært
+understøtter den daglige drift.
+
+Den operationelle anvendelse forudsætter faste procedurer for opsætning
+af inputvariabler, samt ensartet registrering af interne data. Herved
+kan modellen anvendes løbende, uden hyppig genestimering, og
+forudsigelserne forbliver sammenlignelige over tid.
+
+Samlet set understøtter Ridge-modellen en pragmatisk og gradvis
+bevægelse mod øget datamodenhed i VFF, hvor forudsigelser kan indgå
+direkte i planlægning og ressourceallokering uden urealistiske krav til
+organisationens nuværende kapacitet.
+
+# Konklusion {#sec-konklusion}
+
+Analysen viser, at en klassisk lineær regressionsmodel ikke er
+tilstrækkelig robust på grund af multikollinearitet. Flere forklarende
+variabler, er kodet som dummy-variabler og repræsenterer de samme
+underliggende faktorer, hvilket betyder, at reduktion af variabler, som
+i LASSO eller stepwise-metoder, kan fjerne vigtig information. Modeller,
+der bevarer alle relevante variabler og samtidig håndterer
+multikollinearitet, vurderes derfor som mest hensigtsmæssige.
+
+Ud fra analysen identificeres Ridge som den bedste model, da den bevarer
+alle relevante forklaringsvariabler, håndterer multikollinearitet
+effektivt og leverer stabil performance med en RMSE tæt på de andre
+modeller. På denne baggrund vurderes Ridge som den mest egnede
+forudsigelsesmodel i VFF’s kontekst, da den kan anvendes operationelt
+inden for klubbens nuværende datamodenhed, uden krav om omfattende
+organisatoriske eller tekniske ændringer.
+
+\newpage
+
+# Litteraturliste {#sec-litteraturliste}
+
+::: {#refs}
+:::
+
+\newpage
+
+\appendix
+
+\appendix
+
+\addcontentsline{toc}{section}{Bilag}
+
+# Dataforståelse {#sec-dataforståelse}
+
+I arbejdet med forudsigelse af tilskuertal er CRISP-DM-modellen anvendt
+som overordnet analytisk ramme for dataforståelse, modellering og
+evaluering. Med udgangspunkt i CRISP-DM’s forretningsforståelsesfase er
+Viborg F.F.’s behov identificeret som et ønske om at kunne planlægge
+ressourcer og bemanding mere præcist ved hjemmekampe og samtidig
+reducere personafhængige beslutninger i den kommercielle afdeling.
+
+![](crisp-dm.png){width="40%"}
+
+På denne baggrund er der indsamlet og kombineret data fra flere interne
+og eksterne kilder:
+
+-   **Superstats.dk**: kampprogram, modstander, runde, placeringer og
+    historiske tilskuertal
+
+-   **DMI (API)**: kampnært vejr samt klimadata
+
+-   **nager.at (API)**: danske helligdage
+
+-   **Interne data fra VFF**: historisk billetsalg samt aggregerede
+    tilskuertal
+
+-   **Eksterne events**: festivaler og arrangementer omkring kampdage
+
+Data er efterfølgende renset, beriget og samlet i en SQLite-database. I
+denne proces er der konstrueret en række features, herunder
+ferieindikatorer, hverdag/weekend, kamp- og tidstyper, laggede variable
+samt gennemsnitligt historisk tilskuertal pr. holdkombination.
+Sidstnævnte fungerer som et strukturelt efterspørgselsmål og er
+udelukkende baseret på historiske observationer af tidligere kampe
+mellem de samme hold.
+
+# Loade pakker
+
+```{r}
+#| label: Loade pakker
+#| message: false
+#| warning: false
+#| paged-print: true
+
+pacman::p_load(
+  "rvest", "stringr", "purrr", "dplyr", "tidyr", "janitor", 
+  "tibble", "DBI", "RSQLite", "lubridate", "readxl", "tidyverse", "hms", 
+  "httr", "jsonlite", "car", "corrplot", "glmnet", "stats", "caret", "Metrics",  "pls", 
+  "performance", "see", "ggplot2", "fastDummies", "leaps", "patchwork", 
+  "progressr", "plotly", "cowplot", "gt", "kableExtra", "knitr", "DHARMa")
+```
+
+# Webscraping og datarensning af Superstats data {#sec-webscraping-og-datarensning-af-superstats-data}
+
+## Webscraping Superstats - kampprogram {#sec-webscraping-superstats---kampprogram}
+
+Der hentes kampdata fra superstats i en funktion som henter data for én
+sæson af gangen, igennem en dynamisk url. I funktionen er bygget et loop
+som henter og binder cellerne sammen i en tibbel.
+
+```{r}
+#| label: webscrape_superstats_kampdata_saeson
+#| message: true
+#| warning: true
+
+webscrape_superstats_kampdata_saeson <- function(start_aar) {
+  url <- paste0("https://superstats.dk/program?season=", start_aar)
+  season_label <- paste0(start_aar - 1, "/", start_aar)
+  page <- read_html(url, encoding = "UTF-8")
+  tables <- page |> html_elements("table")
+  map2_dfr(tables, seq_along(tables), function(tbl, runde_nr) {
+    rows <- tbl |> html_elements("tr")
+    map_dfr(rows, function(row) {
+      tds <- row |> html_elements("td")
+      texts <- tds |> html_text(trim = TRUE)
+      tv_src <- tds |> html_elements("img") |> html_attr("src")
+      tv <- if (length(tv_src) == 0) NA else str_extract(tv_src, "(?<=/)[^/]+(?=\\.png)") |> 
+        str_to_upper() 
+      if (length(texts) >= 6) {
+        tibble(
+          Saeson = season_label,
+          Runde = runde_nr,
+          Ugedag = texts[1],
+          DatoTid = texts[2],
+          Kamp = texts[3],
+          Resultat = texts[4],
+          Tilskuertal = str_replace_all(texts[5], "\\.", ""),
+          Dommer = texts[6],
+          TVkanal = tv
+        )
+      } else tibble()
+    })
+  })
+}
+
+```
+
+Denne funktion laver et loop over alle årene, den henter ét år ned ad
+gangen og gemmer det som en rds. fil
+
+```{r}
+#| label: webscraping_loop over alle årene
+#| message: false
+#| warning: false
+#| paged-print: true
+
+years <- 2001:2026
+ 
+with_progress({
+  p <- progressor(along = years)
+  superstats_kampe <- map_dfr(years, function(aar) {
+    p(sprintf("Sæson %d/%d", aar - 1, aar))
+    webscrape_superstats_kampdata_saeson(aar)
+  })
+})
+ 
+message("Alle sæsoners kampdata er hentet ✅")
+
+saveRDS(superstats_kampe, "data/superstats_kampe.rds")
+```
+
+### Funktion til rensning af whitespace og bindestreger i kolonner {#sec-funktion-til-rensning-af-whitespace-og-bindestreger-i-kolonner}
+
+Denne funktion renser whitespace foran og bagved i teksten, og
+bindestreger i alle kolonner, den bruges senere i koden til
+datarensning.
+
+```{r}
+#| label: rensning af whitespace og bindestreger
+#| message: false
+#| warning: false
+
+rens_holdnavn <- function(df, kolonne) {
+  df[[kolonne]] <- df[[kolonne]] |> 
+    stringr::str_replace_all("\\s+", "") |>  
+    stringr::str_replace_all("[–—-]+", "-") |> 
+    stringr::str_trim()                       
+  return(df)
+}
+  
+message("Funktion er kørt ✅")
+```
+
+### Datarensning kampprogram {#sec-datarensning-kampprogram}
+
+Henter de midlertidige gemte superstatsdata med readRDS, herefter renses
+kamp kolonenn med overstående funktion (reference til funktionen) og til
+slut fra sorteres unødvendige rækker.
+
+```{r}
+#| label: Hent data fra readRDS
+#| message: false
+#| warning: false
+
+superstats_kampe <- readRDS("data/superstats_kampe.rds")
+
+# Rens Kamp kolonne
+superstats_kampe <- rens_holdnavn(superstats_kampe, "Kamp")
+
+# Fjernelse af unødvendige rækker
+df_kampdata_renset_filtering <- superstats_kampe |> 
+  filter(!is.na(DatoTid) & DatoTid != "" & Tilskuertal != "")
+  
+message("readRDS OK ✅")
+```
+
+Herunder renses kampdata, der laves nye kolonner for
+
+-   Sæson start/slut
+
+-   Samlet dato kolonne
+
+-   Uge dage på dansk
+
+-   Kategorisering af weekend
+
+-   Kategorisering af tid
+
+-   Kategorisering af resultater
+
+-   Ferieindikator identificeres og kategoriseres
+
+```{r}
+#| label: Kampdatarensens og nye kolonner oprettes
+#| message: false
+#| warning: false
+
+# Opsplitning af data, lave samlet dato, og kategorisering af tid
+df_kampdata_renset <- df_kampdata_renset_filtering |>  
+  mutate(
+    # Sæson start/slut
+    Saeson_start = as.integer(str_sub(Saeson, 1, 4)),
+    Saeson_slut  = as.integer(str_sub(Saeson, 6, 9)),
+    
+    # Udtræk dato og tid
+    Dato_kun = str_extract(DatoTid, "^\\d{2}/\\d{2}"),
+    Maaned = as.integer(str_sub(Dato_kun, 4, 5)),
+    Dag = as.integer(str_sub(Dato_kun, 1, 2)),
+    Aar = if_else(Maaned > 6, Saeson_start, Saeson_slut),
+    Tid = str_extract(DatoTid, "\\d{2}:\\d{2}"),
+    Time = as.integer(str_sub(Tid, 1, 2)),
+    Minutter = as.integer(str_sub(Tid, 4, 5)),
+    
+    # Opret samlet dato
+    Dato = make_datetime(Aar, Maaned, Dag, Time, Minutter, tz = "Europe/Copenhagen"),
+    
+    # Ugedag på dansk
+    Ugedag = case_when(
+      wday(Dato, week_start = 1) == 1 ~ "Mandag",
+      wday(Dato, week_start = 1) == 2 ~ "Tirsdag",
+      wday(Dato, week_start = 1) == 3 ~ "Onsdag",
+      wday(Dato, week_start = 1) == 4 ~ "Torsdag",
+      wday(Dato, week_start = 1) == 5 ~ "Fredag",
+      wday(Dato, week_start = 1) == 6 ~ "Lørdag",
+      wday(Dato, week_start = 1) == 7 ~ "Søndag"
+    ),
+    
+    # Hverdag/Weekend
+    Hverdag_Weekend = case_when(
+      Ugedag %in% c("Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag") ~ "Hverdag",
+      Ugedag %in% c("Lørdag", "Søndag") ~ "Weekend"
+    ),
+    
+    # Opsplit kamp og resultat
+    Hjemmehold = str_split_fixed(Kamp, "-", 2)[,1],
+    Udehold   = str_split_fixed(Kamp, "-", 2)[,2],
+    Resultat_Hjemmehold = as.integer(str_split_fixed(Resultat, "-", 2)[,1]),
+    Resultat_Udehold = as.integer(str_split_fixed(Resultat, "-", 2)[,2]),
+    
+    # Resultat-kategori
+   # Resultat_Kategori = case_when(
+    #  Resultat_Hjemmehold > Resultat_Udehold ~ "Hjemmehold_vinder",
+     # Resultat_Hjemmehold < Resultat_Udehold ~ "Udehold_vinder",
+      #Resultat_Hjemmehold == Resultat_Udehold ~ "Uafgjort",
+      #TRUE ~ NA_character_
+    #),
+    
+    # Tidskategori
+    Tid_kategori = case_when(
+      Time >= 9  & Time < 12 ~ "Formiddag",
+      Time >= 12 & Time < 15 ~ "Eftermiddag",
+      Time >= 15 & Time < 18 ~ "Sen eftermiddag",
+      Time >= 18 & Time <= 22 ~ "Aften",
+      TRUE ~ NA_character_
+    ),
+    
+    # Ferie-indikatorer
+    Sommerferie   = if_else((Maaned == 6 & Dag >= 26) | 
+                              (Maaned == 7) | (Maaned == 8 & Dag <= 10), 1, 0),
+    Efteraarsferie = if_else(Maaned == 10 & Dag >= 10 & Dag <= 20, 1, 0),
+    Vinterferie   = if_else(Maaned == 2 & Dag >= 7 & Dag <= 21, 1, 0),
+    Juleferie     = if_else((Maaned == 12 & Dag >= 20) | (Maaned == 1 & Dag <= 3), 1, 0),
+    
+    # Samlet ferie
+    Ferie = if_else(Sommerferie + Efteraarsferie + Vinterferie + Juleferie > 0, 1, 0)
+  )
+  
+message("Kampdata renset ✅")
+```
+
+Her fjernes dubletter
+
+```{r}
+#| label: Fjern dubletter
+#| message: false
+#| warning: false
+
+# Fjern dubletter
+df_kampdata_renset <- df_kampdata_renset |> distinct()
+
+message("Dubletter er fjernet ✅")
+```
+
+Unikt kampide tilføjes
+
+```{r}
+#| label: unikt kamp_id
+#| message: false
+#| warning: false
+
+# Tilføj unik kamp_id
+kamp_data <- df_kampdata_renset |> 
+  mutate(kamp_id = row_number()) |> 
+  relocate(kamp_id, .before = 1)
+  
+message("unikt kamp_id ✅")
+```
+
+Der tilføjes datatyper, for at sikre sig at de bliver gemt korrekt
+herefter gemmes det i SQLite database.
+
+```{r}
+#| label: Datatyper tilføjes
+#| message: false
+#| warning: false
+
+# Tilføj datatyper
+kamp_data <- kamp_data |>
+  mutate(
+    kamp_id = as.integer(kamp_id),
+    Runde = as.integer(Runde),
+    Saeson_start = as.integer(Saeson_start),
+    Saeson_slut  = as.integer(Saeson_slut),
+    Tilskuertal = as.integer(Tilskuertal),
+    Dato = format(Dato, "%Y-%m-%d %H:%M:%S"),
+    Maaned = as.integer(Maaned)
+  )
+
+
+# Skriv til SQLite
+con_sql_tilskuer <- dbConnect(RSQLite::SQLite(), "data/vff_tilskuer_data.sqlite")
+dbWriteTable(con_sql_tilskuer, "kampdata", kamp_data, overwrite = TRUE)
+dbDisconnect(con_sql_tilskuer)
+  
+message("Datatyper ændret og skrevet i SQLite ✅")
+```
+
+## Wepscraping superstats - placering {#sec-wepscraping-superstats---placering}
+
+Der hentes placering fra superstats i en funktion som henter data for ét
+år af gangen, igennem en dynamisk url. Det hele samles i en lang tabel
+med pivot longer, for at få runder lavet om til værdier i stedet for
+overskrifter. (reference til kildeliste)
+
+```{r}
+#| label: Wepscraping superstats
+#| message: false
+#| warning: false
+# Hent placeringer pr. runde for én sæson
+hent_placering_pr_runde <- function(start_aar) {
+  url <- paste0(
+    "https://superstats.dk/stilling/pladser-runde?id=&season=",
+    start_aar
+  )
+  season_label <- paste0(start_aar - 1, "/", start_aar)
+  side <- read_html(url, encoding = "UTF-8")
+  tabel <- side |>
+    html_element("table") |>
+    html_table(header = FALSE)
+  # Første række er kolonnenavne
+  colnames(tabel) <- tabel[1, ]
+  tabel <- tabel[-1, ]
+  colnames(tabel)[1] <- "hold"
+  tabel |>
+    pivot_longer(
+      cols = matches("^[0-9]+$"),
+      names_to = "runde",
+      values_to = "placering"
+    ) |>
+    mutate(
+      hold = trimws(hold),
+      runde = as.integer(runde),
+      placering = as.integer(placering),
+      saeson = season_label
+    )
+}
+
+message("Funktion til hentning af data fra superstats er kørt ✅")
+```
+
+Overstående funktion bruges nu til at hente placering pr. sæson, det
+hele gemmes i en samlet tabel og gemmes i rds fil.
+
+```{r}
+#| label: Sæson placeringer
+#| message: false
+#| warning: false
+years <- 2001:2026
+ 
+with_progress({
+  p <- progressor(along = years)
+  alle_saesoner <- map_dfr(years, function(aar) {
+    p(sprintf("Placeringer %d/%d", aar - 1, aar))
+    hent_placering_pr_runde(aar)
+  })
+})
+  
+message("Alle sæsoners placeringer er hentet ✅")
+
+saveRDS(alle_saesoner, "data/alle_saesoner.rds")  
+  
+message("Placeringer pr. sæson er hentet ✅")
+```
+
+Rds. filen hentes ind igen, før datatyperne tilføjes og det hele gemmes
+i SQLite database,
+
+```{r}
+#| label: Datatyper
+#| message: false
+#| warning: false
+superstats_kampe <- readRDS("data/alle_saesoner.rds")
+
+alle_saesoner <- superstats_kampe |>
+  mutate(
+    placering_id = row_number(),
+    runde = as.integer(runde),
+    placering = as.integer(placering)
+  )
+
+con_sql_tilskuer <- dbConnect(RSQLite::SQLite(), "data/vff_tilskuer_data.sqlite") 
+
+dbWriteTable(con_sql_tilskuer, "superstats_placering", alle_saesoner, overwrite = TRUE)
+
+dbDisconnect(con_sql_tilskuer)
+  
+message("Gemt i SQLite ✅")
+```
+
+# API kald til DMI (Metobs) {#sec-api-kald-til-dmi}
+
+## Klargøring af kampdatoer {#sec-klargøring-af-kampdatoer}
+
+Alle VFF hjemmekampe datoer gemmes i en seperat tabel og tidsformatet
+konverteres til et datetime-objekt så de kan bruges senere i koden.
+
+```{r}
+#| label: Klargøring af datoer (hjemmekampe)
+#| message: false
+#| warning: false
+df_kampdata_renset_kampdato <- kamp_data |> 
+  filter(str_starts(Kamp, "VFF")) |>
+  filter(!is.na(Dato)) |> 
+  distinct(Dato)
+
+dato_hjemmekampe <- df_kampdata_renset_kampdato
+
+dato_hjemmekampe$Dato <- as.POSIXct(dato_hjemmekampe$Dato,origin = "1970-01-01",
+                                    tz = "Europe/Copenhagen")
+  
+message("Datoer for hjemmekampe er gemt ✅")
+```
+
+## Definering af kampdatoer og vinduer {#sec-definering-af-kampdatoer-og-vinduer}
+
+Denne funktion laver et "kampvindue", som skal bruges til at definere
+hvilke DMI observationer vi ønsker at hente igennem API-kaldet.
+Kampvinduet gemmes som en tekststreng pr. hjemmekamp.
+
+```{r}
+#| label: Definere "kampvinduer"
+#| message: false
+#| warning: false
+lav_kamp_vindue <- function(dato_hjemmekampe) {
+  kamp_datoer <- as.Date(dato_hjemmekampe$Dato)
+  
+  kamp_fra <- as.POSIXct(kamp_datoer, tz = "UTC")
+  kamp_til <- kamp_fra + hours(23) + minutes (59) + seconds (59)
+  
+  kamp_fra_DMIstr <- format(kamp_fra, "%Y-%m-%dT%H:%M:%SZ")
+  kamp_til_DMIstr <- format(kamp_til, "%Y-%m-%dT%H:%M:%SZ")
+  
+  kamp_vindue <- paste0(kamp_fra_DMIstr, "/", kamp_til_DMIstr)
+}
+
+kamp_vindue <- lav_kamp_vindue(dato_hjemmekampe)
+  
+message("Kampvinduer er lavet ✅")
+```
+
+## Funktion til at hente DMI-data for én kamp (MetObs)
+
+Denne funktion henter DMI data hvor hver kampdag igennem DMI API til
+MetObs. DMI har fjernet behovet for at bruge API-nøgle.
+
+```{r}
+#| label: API Kald (MetObs)
+#| message: false
+#| warning: false
+base_url   <- "https://opendataapi.dmi.dk/v2/"
+info_url   <- "metObs/collections/observation/items?"
+station_id <- "06060"
+
+hent_kamp_data <- function(i) {
+  
+  req_url <- paste0(
+    "stationId=", station_id,
+    "&datetime=", kamp_vindue[i],
+    "&limit=100000"
+  )
+  
+  full_url <- paste0(base_url, info_url, req_url)
+  
+  res <- httr::GET(full_url) 
+  
+  api_char <- rawToChar(res$content)
+  api_JSON <- jsonlite::fromJSON(api_char, flatten = TRUE)
+  
+  feats <- api_JSON$features
+  
+  kolonne_1 <- as.vector(feats$properties.observed)
+  kolonne_2 <- as.vector(feats$properties.parameterId)
+  kolonne_3 <- as.vector(feats$properties.value)
+  
+  tibble <- tibble::tibble(
+    Observationstidspunkt = kolonne_1,
+    Observationer         = kolonne_2,
+    Værdi                 = kolonne_3
+  ) 
+}
+
+message("Funktion til DMI er kørt ✅")
+```
+
+Her hentes DMI data for hver kampdag, og det hele bindes til slut sammen
+i en tabel.
+
+```{r}
+#| label: DMI data pr. kampdag
+#| message: false
+#| warning: false
+idx <- seq_along(kamp_vindue)
+ 
+with_progress({
+  p <- progressor(along = idx)
+  kamp_df <- map_dfr(idx, function(i) {
+    result <- hent_kamp_data(i)
+    p(message = paste("Hentet kampdag", i, "af", length(kamp_vindue)))
+    result
+  })
+})
+ 
+message("Alle kampdage hentet ✅")
+```
+
+## Datarensning og beregninger {#sec-datarensning-og-beregninger}
+
+Data fra DMI (MetObs) laves til en samlet liste, hvor parametere bliver
+til kolonner.
+
+```{r}
+#| label: DMI  data damles i én liste
+#| message: false
+#| warning: false
+samlet_liste <- kamp_df |> 
+  tidyr::pivot_wider(
+    id_cols = Observationstidspunkt,
+    names_from = Observationer,
+    values_from = Værdi
+  ) |> 
+  dplyr::mutate(Dato = lubridate::date(Observationstidspunkt),
+                .before = Observationstidspunkt)
+
+message("Samlet_liste  ✅")
+```
+
+Der laves beregninger for middel, max og minimumstemperatur for hver
+kampdag.
+
+```{r}
+#| label: Beregninger af middel, max og min temp pr. kampdag
+#| message: false
+#| warning: false
+temperatur_kampdag <- samlet_liste |>  
+  mutate(Dato = as.Date(Observationstidspunkt, timer_før_kamp = Observationstidspunkt - 7)) |> 
+  group_by(Dato) |>  
+  summarise(
+    middel_temp = mean(temp_dry, na.rm = TRUE),
+    max_temp = max(temp_dry, na.rm = TRUE),
+    min_temp = min(temp_dry, na.rm = TRUE),
+    .groups = "drop")
+  
+message("Temperatur_kampdag ✅")
+```
+
+Der laves et tidsinterval på 7 timer før hver kamp, og herefter laves
+der beregninger på nedbør i timerne op til kampen.
+
+```{r}
+#| label: Tidsintervaller til nedbør
+#| message: false
+#| warning: false
+nedbør_kampdag <- samlet_liste |> 
+  mutate(
+    Obs_utc  = ymd_hms(Observationstidspunkt, tz = "UTC"),
+    interval = lubridate::interval(Obs_utc - lubridate::hours(7), Obs_utc)
+  )
+
+kampe2 <- dato_hjemmekampe |> 
+  mutate(
+    kampstart_loc = as.POSIXct(Dato, tz = "Europe/Copenhagen"),
+    start         = with_tz(kampstart_loc, "UTC"),
+    start_minus_7h = start - hours(7)
+  )
+
+message("nedbør_kampdag✅")
+```
+
+Ved hjælp af cross_join matches hver kamp med alle observationer i de 7
+timer før kampstart
+
+Derefter summariseres nedbør
+
+```{r}
+#| label: recap af nedbør 
+#| message: false
+#| warning: false
+
+resultat <- kampe2 |> 
+  cross_join(nedbør_kampdag) |> 
+  filter(
+    Obs_utc >= start_minus_7h,
+    Obs_utc <= start
+  ) |> 
+  group_by(start) |>  
+  summarise(
+    nedbor_7h = sum(precip_past1h, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+message("Summarise er lavet ✅")
+```
+
+Der tilføjes datatyper, for at sikre korrekte formatering hvorefter
+tabellen gemmes i SQLite.
+
+```{r}
+#| label: Tilføjelse af datatyper
+#| message: false
+#| warning: false
+temperatur_kampdag <- temperatur_kampdag |> 
+  mutate(
+    Dato = as.character(Dato),  
+    middel_temp = as.numeric(middel_temp),
+    max_temp = as.numeric(max_temp),
+    min_temp = as.numeric(min_temp)
+  )
+
+resultat <- resultat |> 
+  mutate(
+    start = format(start, "%Y-%m-%d %H:%M:%S"), 
+    nedbor_7h = as.numeric(nedbor_7h)
+  )
+
+con_sql <- dbConnect(RSQLite::SQLite(), "data/vff_tilskuer_data.sqlite")
+
+dbWriteTable(con_sql, "temperatur_kampdag", temperatur_kampdag, overwrite = TRUE)
+dbWriteTable(con_sql, "nedbor_kampdag", resultat, overwrite = TRUE)
+dbDisconnect(con_sql)
+
+message("Datatyper og gemt i SQLite ✅")
+```
+
+# API kald til DMI (klima) {#sec-api-kald-til-dmi-klima}
+
+## Klargøring af sidste kampdato {#sec-klargøring-af-sidste-kampdato}
+
+Her findes VFF sidste hjemmekamps dato, som bruges i DMI API-kaldet
+efterfølgende.
+
+```{r}
+#| label: Definering af sidste hjemmekamps dato
+#| message: false
+#| warning: false
+sidste_kamp_dato <- kamp_data |>
+  mutate(Dato = as.Date(Dato)) |>   
+  filter(str_starts(Kamp, "VFF")) |>
+  filter(!is.na(Dato)) |>
+  distinct(Dato) |>
+  arrange(Dato) |>
+  slice_tail(n = 1) |>
+  mutate(Dato_dmi = format(Dato, "%Y-%m-%dT00:00:00Z"))
+
+message("Sidste kampdag kørt ✅")
+```
+
+## DMI-kald {#sec-dmi-kald}
+
+Denne funktion henter DMI data for gennemsnitlige temperaturer pr. måned
+igennem DMI API til Klima. (OBS DATO) DMI har fjernet behovet for at
+bruge API-nøgle.
+
+```{r}
+#| label: API kald (Klima)
+#| message: false
+#| warning: false
+base_url_klima   <- "https://opendataapi.dmi.dk/v2/"
+info_url_klima   <- "climateData/collections/stationValue/items?"
+station_id_klima <- "06060"
+
+start_dato_klima <- "2000-01-01T00:00:00Z"
+slut_dato_klima   <- sidste_kamp_dato$Dato_dmi
+dato_tid_klima <- paste0(start_dato_klima, "/", slut_dato_klima)
+  
+req_url_klima <- paste0(
+  "stationId=", station_id_klima,
+  "&parameterId=mean_temp",
+  "&timeResolution=month",
+  "&datetime=", dato_tid_klima,
+  "&limit=300000"
+)
+
+  full_url_klima <- paste0(base_url_klima, info_url_klima, req_url_klima)
+  
+  res_klima <- httr::GET(full_url_klima) 
+  
+  api_char_klima <- rawToChar(res_klima$content)
+  api_JSON_klima <- jsonlite::fromJSON(api_char_klima, flatten = TRUE)
+  
+  feats_klima <- api_JSON_klima$features
+  
+  kolonne_1_klima <- as.Date(feats_klima$properties.calculatedAt)
+  kolonne_2_klima <- as.vector(feats_klima$properties.parameterId)
+  kolonne_3_klima <- as.vector(feats_klima$properties.value)
+
+  
+  tibble_klima <- tibble::tibble(
+    dato_klima = kolonne_1_klima,
+    maaned_klima = lubridate::month(kolonne_1_klima),
+    dag_klima   = lubridate::day(kolonne_1_klima),
+    Observationer_klima = kolonne_2_klima,
+    Værdi_klima = kolonne_3_klima) |> 
+    group_by(maaned_klima, Observationer_klima) |>
+    summarise(
+      middel_værdi_klima = mean(Værdi_klima, na.rm = TRUE),
+      .groups = "drop"
+    )
+
+
+  samlet_liste_klima <- tibble_klima |> 
+    tidyr::pivot_wider(
+      id_cols = maaned_klima,
+      names_from = Observationer_klima,
+      values_from = middel_værdi_klima
+    ) 
+  
+  con_sql_tilskuer <- dbConnect(RSQLite::SQLite(), "data/vff_tilskuer_data.sqlite") 
+  
+  dbWriteTable(con_sql_tilskuer, "dmi_klima", samlet_liste_klima, overwrite = TRUE)
+
+  
+message("DMI-klimadata er hentet og gemt i databasen ✅")
+```
+
+# API kald nager.at {#sec-api-kald-nager.at}
+
+API henter danske helligdage fra nager.at for årene fra 2001 til 2025.
+
+```{r}
+#| label: API Kald (nager.at)
+#| message: false
+#| warning: false
+#| 
+aar_super <- 2001:2025 
+BASE_URL <- 'https://date.nager.at/api/v3/PublicHolidays/'
+LAND_URL <- '/DK'
+
+helligdage_df <- tibble(
+  navn = character(),
+  DatoDate = as.Date(character()) 
+)
+
+for (aar in aar_super) {
+  url <- paste0(BASE_URL, aar, LAND_URL)
+  response <- GET(url)
+  
+  if (status_code(response) != 200) {
+    if (status_code(response) == 404) {
+      warning(paste("Ingen data for", aar))
+      next
+    }
+    stop("API fejl: ", status_code(response))
+  }
+  
+  raadata <- content(response, as = "text", encoding = "UTF-8")
+  parsed_data <- fromJSON(raadata, simplifyDataFrame = TRUE)
+  
+  if (!is.data.frame(parsed_data) || nrow(parsed_data) == 0) next
+  
+  helligdage_df <- bind_rows(
+    helligdage_df,
+    tibble(
+      navn = parsed_data$localName,
+      DatoDate = as.Date(parsed_data$date)
+    )
+  )
+}
+message("helligdage er hentet ✅")  
+```
+
+Datatyper tilføjes og tabellen gemmes i SQLite database.
+
+```{r}
+
+#| message: false
+#| warning: false
+helligdage_df <- helligdage_df %>%
+  mutate(
+    DatoDate = format(DatoDate, "%Y-%m-%d"), 
+    navn = as.character(navn)
+  )
+
+helligdage_df |> 
+  filter(navn != "Banklukkedag")
+
+
+con_sql_tilskuer <- dbConnect(RSQLite::SQLite(), "data/vff_tilskuer_data.sqlite") 
+
+dbWriteTable(con_sql_tilskuer, "helligdage", helligdage_df, overwrite = TRUE) 
+
+```
+
+# Indlæsning af antal solgte billetter {#sec-indlæsning-af-antal-solgte-billetter}
+
+Vi indlæser antal solgte billetter, renser holdnavnene og gemmer det
+hele i SQLite databasen.
+
+```{r}
+#| label: Solgte biletter (historisk)
+#| message: false
+#| warning: false
+
+vffkort <- read_rds("data/vffkort01.rds")
+ 
+vffkort <- rens_holdnavn(vffkort, "hold")
+ 
+vffkort <- vffkort |> 
+  clean_names() |>  
+  rename(
+    aar = ar
+  )
+
+dbWriteTable(con_sql_tilskuer, "vffkort", vffkort, overwrite = TRUE)
+```
+
+# Indlæsning af events {#sec-indlæsning-af-events}
+
+Vi indlæser data fra en Excel fil, vi sørger for at alle kolonner hedder
+det samme med mutate, vi renser data og opretter en dummie kolonne. Til
+slut samles det hele i en kolonne i tabellen, som gemmes i SQLite
+database.
+
+```{r}
+#| label: Events 
+#| message: false
+#| warning: false
+
+fane_navne <- excel_sheets("data/events_data.xlsx")
+ 
+events_list <- lapply(fane_navne, function(f) {
+  df <- read_excel("data/events_data.xlsx", sheet = f) |> 
+    mutate(
+      Start = as.Date(dato_start),
+      Slut  = as.Date(dato_slut)
+    ) |> 
+    filter(!is.na(Start) & !is.na(Slut)) |>  
+    rowwise() |> 
+    mutate(Dato = list(seq(Start, Slut, by = "day"))) |> 
+    unnest(Dato) |> 
+    select(Dato) |> 
+    mutate(dummy = 1)
+  names(df)[2] <- f 
+  df
+})
+ 
+events_dummies <- Reduce(function(x, y) full_join(x, y, by = "Dato"), events_list)
+ 
+events_dummies[is.na(events_dummies)] <- 0
+ 
+events_dummies <- events_dummies |> 
+  mutate(
+    Festival = if_else(rowSums(across(-Dato)) > 0, 1, 0),
+    Dato = format(Dato, "%Y-%m-%d")
+  ) |> 
+  select(Dato, Festival)
+ 
+dbWriteTable(con_sql_tilskuer, "events", events_dummies, overwrite = TRUE)
+
+```
+
+# Joine tabeller i SQLite {#sec-joine-tabeller-i-sqlite}
+
+Kampdata jonies med tabellerne for helligdage, antal solgte biletter,
+events og DMI data fra MetObs og Klima. Det hele bliver lavet i SQLite
+databasen.
+
+```{r}
+#| label: Join af tabeller på tværs
+#| message: false
+#| warning: false
+con_sql_tilskuer <- dbConnect(RSQLite::SQLite(), "data/vff_tilskuer_data.sqlite") 
+  
+dbExecute(con_sql_tilskuer, "DROP TABLE IF EXISTS kampdata_beriget")
+
+dbExecute(con_sql_tilskuer, "
+  CREATE TABLE kampdata_beriget AS
+  SELECT
+      kampdata.*,
+      helligdage.navn AS Helligdage,
+        CASE WHEN helligdage.navn IS NOT NULL THEN 1 ELSE 0 END AS Helligdag_flag,
+      vffkort.d10_tilskuere AS Dag10_tilskuere,
+      vffkort.d7_tilskuere AS Dag7_tilskuere,
+      vffkort.d3_tilskuere AS Dag3_tilskuere,
+      temperatur_kampdag.middel_temp AS Middel_temp,
+      temperatur_kampdag.max_temp AS Max_temp,
+      nedbor_kampdag.nedbor_7h AS Nedbor_7h,
+      events.Festival AS Festival,
+      dmi_klima.mean_temp AS month_mean_temp
+  FROM kampdata
+    LEFT JOIN helligdage      
+      ON date(kampdata.Dato) = date(helligdage.DatoDate)
+    LEFT JOIN vffkort        
+      ON kampdata.Aar = vffkort.aar
+      AND kampdata.Runde = vffkort.runde
+      AND kampdata.Kamp = vffkort.hold
+    LEFT JOIN temperatur_kampdag 
+      ON date(kampdata.Dato) = date(temperatur_kampdag.Dato)
+    LEFT JOIN nedbor_kampdag 
+      ON date(kampdata.Dato) = date(nedbor_kampdag.start)
+    LEFT JOIN events          
+      ON date(kampdata.Dato) = date(events.Dato)
+    LEFT JOIN dmi_klima
+      ON kampdata.Maaned = dmi_klima.maaned_klima
+")
+```
+
+## Beregner placeringer, lag_placeringer, lag_tilskuere og kamp_typer {#sec-beregner-placeringer-lag_placeringer-lag_tilskuere-og-kamp_typer}
+
+Kampdata og data vedr. placeringer hentes fra SQLite databsen, herefter
+udregnes lag-placeringen og lag-tilskurere. Kamptyper inddeles type A og
+B kampe. Det hele gemmes i SQLite databasen igen.
+
+```{r}
+#| label: Beregninger 
+#| message: false
+#| warning: false
+kamp_data <- dbGetQuery(con_sql_tilskuer, "SELECT * FROM kampdata")
+superstats_placering <- dbGetQuery(con_sql_tilskuer, "SELECT * FROM superstats_placering") |>
+  group_by(hold, saeson, runde) |> 
+  slice(1) |> 
+  ungroup()
+
+kamp_long <- kamp_data |>
+  select(kamp_id, Hjemmehold, Udehold, Saeson, Runde, Dato) |>
+  pivot_longer(cols = c(Hjemmehold, Udehold), 
+               names_to = "type", values_to = "hold") |>
+  left_join(superstats_placering, 
+            by = c("hold" = "hold", "Saeson" = "saeson", "Runde" = "runde"))
+
+kamp_long <- kamp_long |>
+  group_by(hold, Saeson) |>
+  arrange(Dato, .by_group = TRUE) |>
+  mutate(placering_lag = lag(placering)) |>
+  ungroup()
+
+kamp_lag <- kamp_long |>
+  pivot_wider(
+    id_cols = kamp_id,
+    names_from = type,
+    values_from = c(hold, placering, placering_lag)
+  ) |>
+  left_join(kamp_data, by = "kamp_id") |>
+  group_by(Kamp) |>
+  arrange(Dato) |>
+  mutate(lag_tilskuer = lag(Tilskuertal)) |>
+  ungroup() |>
+  mutate(
+    kamp_type = case_when(
+      Hjemmehold == "VFF" & (placering_Hjemmehold <= 4 | placering_Udehold <= 4) ~ "A",
+      Hjemmehold == "VFF" ~ "B",
+      TRUE ~ NA_character_
+    )
+  )
+
+dbWriteTable(con_sql_tilskuer, "kampdata_renset", kamp_lag, overwrite = TRUE)
+
+message("beregning kørt ✅")    
+  
+```
+
+## Join af lag_placeringer, lag_tilskuer og kampdata_beriget {#sec-join-af-lag_placeringer-lag_tilskuer-og-kampdata_beriget}
+
+Vi joiner tabellerne fra overstående chunck sammen med vores tabel
+kampdata_endelig.
+
+```{r}
+#| label: Join med beregninger 
+#| message: false
+#| warning: false
+kampdata_endelig <- kamp_lag |>
+  left_join(
+    dbGetQuery(con_sql_tilskuer, "
+      SELECT 
+        kamp_id, Helligdage, Helligdag_flag, Dag10_tilskuere, Dag7_tilskuere, 
+        Dag3_tilskuere, Middel_temp, Max_temp, Nedbor_7h, Festival, month_mean_temp
+          FROM kampdata_beriget
+    "),
+    by = "kamp_id"
+  )
+
+message("join kørt ✅")  
+  
+```
+
+Ændre alle NA værdier til = 0
+
+```{r}
+#| label: NA værdier = 0
+#| message: false
+#| warning: false
+
+kampdata_endelig <- kampdata_endelig |> 
+mutate(across(where(is.numeric), ~replace_na(., 0)))
+```
+
+## Beregning af gennemsnitlig antal tilskuere og joiner den tilbage i kampdata_endelig {#sec-beregning-af-gennemsnitlig-antal-tilskuere-og-joiner-den-tilbage-i-kampdata_endelig}
+
+Laver gennemsnitlig antal tilskuere og joiner den tilbage i
+kampdata_endelig
+
+```{r}
+#| label: Beregninger og join tilbage 
+#| message: false
+#| warning: false
+
+dbWriteTable(con_sql_tilskuer, "kampdata_endelig", kampdata_endelig, overwrite = TRUE)
+
+dbExecute(con_sql_tilskuer, "DROP TABLE IF EXISTS gns_tilskuere")
+
+dbExecute(con_sql_tilskuer, "
+  CREATE TEMP TABLE gns_tilskuere AS
+    SELECT 
+      Udehold, AVG(Tilskuertal) 
+        AS gennemsnit_tilskuere
+    FROM kampdata_endelig
+    WHERE Hjemmehold = 'VFF'
+    GROUP BY Udehold
+")
+
+dbExecute(con_sql_tilskuer, "DROP TABLE IF EXISTS kampdata_endelig_med_gns")
+
+dbExecute(con_sql_tilskuer, "
+  CREATE TABLE kampdata_endelig_med_gns AS
+    SELECT 
+      kampdata_endelig.*, 
+      gns_tilskuere.gennemsnit_tilskuere
+    FROM kampdata_endelig
+      LEFT JOIN gns_tilskuere 
+        ON kampdata_endelig.Udehold = gns_tilskuere.Udehold
+    WHERE kampdata_endelig.Hjemmehold = 'VFF'
+")
+
+dbExecute(con_sql_tilskuer, "DROP TABLE IF EXISTS kampdata_endelig")
+dbExecute(con_sql_tilskuer, "ALTER TABLE kampdata_endelig_med_gns RENAME TO kampdata_endelig")
+
+kampdata_endelig <- dbGetQuery(con_sql_tilskuer, "SELECT * FROM kampdata_endelig")
+
+dbDisconnect(con_sql_tilskuer)
+  
+message("beregning og join kørt ✅")  
+```
+
+# Modellering {#sec-modellering}
+
+## Klargøring af data til lineær regression {#sec-klargøring-af-data-til-lineær-regression}
+
+Data hentes fra SQLite databasen.
+
+Vi sikre os her at alt er numeriske værdier, at dummievariabler er 0/1
+og at formater er korrekte.
+
+```{r}
+#| label: Dataklargøring (lineærregression)
+#| message: false
+#| warning: false
+con_sql_tilskuer <- dbConnect(RSQLite::SQLite(), "data/vff_tilskuer_data.sqlite")
+
+  df_test <- dbGetQuery(con_sql_tilskuer, "SELECT * FROM kampdata_endelig")|> 
+  clean_names() |> 
+  mutate(
+    dato     = as.POSIXct(dato, format = "%Y-%m-%d %H:%M:%S"),
+    dato_kun = as.Date(dato_kun, format = "%d/%m"),
+    across(where(is.character), as.factor),
+    across(
+      c(
+        sommerferie, efteraarsferie, vinterferie,
+        juleferie, ferie, festival, helligdag_flag
+      ),
+      as.numeric
+    ),
+    across(
+      where(~ is.integer(.) && all(na.omit(.) %in% c(0L, 1L))),
+      as.numeric
+    )
+  )
+  
+dbDisconnect(con_sql_tilskuer)
+```
+
+## Lineær regression {#sec-lineær-regression}
+
+Vi kører en lineær regression for at få overblik, over hvordan
+variablerne hænger sammen.
+
+```{r}
+#| label: Lineær regression
+#| message: false
+#| warning: false
+df_lm <- df_test |> 
+
+  select(
+    tilskuertal,
+    placering_lag_hjemmehold,
+    placering_lag_udehold,
+    runde,
+    lag_tilskuer,
+    gennemsnit_tilskuere,
+    maaned,
+    aar,
+    time,
+    nedbor_7h,
+    month_mean_temp,
+    middel_temp,
+    max_temp,
+    ferie,
+    helligdag_flag,
+    festival
+  ) |> 
+  na.omit()
+```
+
+Viser korrelation mellem variablerne
+
+```{r}
+#| label: Korrelation (Lineær regression)
+#| message: false
+#| warning: false
+#| fig-width: 10
+#| fig-height: 8
+#| out-width: "100%"
+df_corr <- df_lm |> 
+  select(-tilskuertal)
+cor_mat <- cor(df_corr)
+corrplot::corrplot(
+  cor_mat,
+  method = "color", 
+  type = "upper",     
+  order = "hclust",    
+  tl.cex = 0.8,     
+  addCoef.col = "black",
+  number.cex = 0.6
+)
+```
+
+Tabel der viser de variabler der korrellerere mest.
+
+```{r}
+#| label: De meste korrellerende (lineær regression)
+#| message: false
+#| warning: false
+high_corr <- which(abs(cor_mat) > 0.8 & abs(cor_mat) < 1, arr.ind = TRUE)
+
+high_corr_df <- data.frame(
+  Var1 = rownames(cor_mat)[high_corr[,1]],
+  Var2 = colnames(cor_mat)[high_corr[,2]],
+  Correlation = cor_mat[high_corr]
+)
+ 
+high_corr_df
+```
+
+```{r}
+#| label: Summary over den lineærer regression
+#| message: false
+#| warning: false
+
+lm_simple <- lm(
+  tilskuertal ~ .,
+  data = df_lm
+)
+ 
+summary(lm_simple)
+  
+```
+
+##Visualisering af residualer for den lineærer regressions model.
+
+### Residualer for den lineærer regressions model
+
+```{r}
+#| label: residualer for den lineærer regressions model
+#| message: false
+#| warning: false
+#| fig-width: 10
+#| fig-height: 8
+#| out-width: "100%"
+check_model(lm_simple)
+  
+```
+
+### Multikulinaritet
+
+```{r}
+#| label: Multikulinaritet
+#| message: false
+#| warning: false
+
+check_collinearity(lm_simple)
+
+col_res <- check_collinearity(lm_simple)
+plot(col_res) +
+  ggplot2::labs(y = "VIF (log-skala)") + 
+    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+```
+
+### Korrelation
+
+```{r}
+#| label: Korrelation
+#| message: false
+#| warning: false
+check_autocorrelation(lm_simple)
+```
+
+### Hetroelasticitet
+
+```{r}
+#| label: Hetroelasticitet
+#| message: false
+#| warning: false
+check_heteroscedasticity(lm_simple)
+
+col_res_het <- check_heteroscedasticity(lm_simple)
+plot(col_res_het) +
+    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+```
+
+### Normalitet
+
+```{r}
+#| message: false
+#| warning: false
+
+check_normality(lm_simple)
+
+col_res_nom <- check_normality(lm_simple)
+plot(col_res_nom) +
+    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+```
+
+### Outliers
+
+```{r}
+#| label: Outliers
+#| message: false
+#| warning: false
+check_outliers(lm_simple)
+```
+
+### Residualer
+
+```{r}
+#| label: Residualer
+#| message: false
+#| warning: false
+check_residuals(lm_simple)
+```
+
+# Opsætning af datasæt til forudsigelsesmodellerne {#sec-opsætning-af-datasæt-til-forudsigelsesmodellerne}
+
+Henter data fra SQLite og renser navne, for at sikre snake_case i
+datasættet.
+
+```{r}
+#| label: Henter data fra SQLite
+#| message: false
+#| warning: false
+
+con_sql_tilskuer <- dbConnect(RSQLite::SQLite(), "data/vff_tilskuer_data.sqlite")
+df <- dbGetQuery(con_sql_tilskuer, "SELECT * FROM kampdata_endelig")
+df <- df |> clean_names()
+
+```
+
+Vi omdøber missing værdier i t_vkanaler til IngenTV, da vi ikke ønsker
+at fjerne disse linjer.
+
+```{r}
+#| label: Omdøbninger
+#| message: false
+#| warning: false
+df$t_vkanal <- as.character(df$t_vkanal)
+df$t_vkanal[is.na(df$t_vkanal)] <- "IngenTV"
+df$t_vkanal <- as.factor(df$t_vkanal)
+  
+```
+
+Kolonner der frasorteres, da vi har vurderet at de ikke skal med i
+modellerne.
+
+```{r}
+#| label: Oprydning i kolonner
+#| message: false
+#| warning: false
+df <- df |> select(
+  -kamp_id, 
+  -dato, -dato_tid, -dag, -saeson, -time, -minutter, -dato_kun, -tid, -ugedag,
+  -saeson_start, -saeson_slut, -helligdage,
+  -hold_hjemmehold, -hold_udehold, -kamp, -resultat,
+  -dommer, -hjemmehold, -resultat_hjemmehold, -resultat_udehold,
+  -placering_hjemmehold, -placering_udehold,
+  -sommerferie, -vinterferie, -efteraarsferie, -juleferie,
+  -middel_temp, -max_temp
+)
+
+```
+
+## Opbygning af datasæt - anvendes af alle modeller
+
+Base-funktion til alle datasæt
+
+```{r}
+#| label: Base til alle datasæt
+#| message: false
+#| warning: false
+build_base_dataset <- function(df_raw, target="tilskuertal", max_levels=10,
+     top_t_vkanal=c
+     ("TV3SPORT","3PLUS","9EREN2","TV2SPORTX","16","IngenTV","TV2SPORT")){
+  cols_use <- c(
+    target,
+    "placering_lag_hjemmehold", "placering_lag_udehold",
+    "runde", "maaned", "aar",
+    "ferie", "festival", "helligdag_flag",
+    "lag_tilskuer", "nedbor_7h",
+    "dag10_tilskuere", "dag7_tilskuere", "dag3_tilskuere",
+    "month_mean_temp", "gennemsnit_tilskuere",
+    "hverdag_weekend", "t_vkanal", "udehold",
+    "tid_kategori", "kamp_type"
+  )
+  
+  df <- df_raw |> select(any_of(cols_use))
+  
+  # ---- Faktorer ----
+  if("udehold" %in% names(df)) df$udehold <- as.factor(df$udehold)
+  
+  if("t_vkanal" %in% names(df)){
+    df$t_vkanal <- as.character(df$t_vkanal)
+    df$t_vkanal[!df$t_vkanal %in% top_t_vkanal] <- "Andre"
+    df$t_vkanal <- as.factor(df$t_vkanal)
+  }
+  
+  char_cols <- names(df)[sapply(df, is.character)]
+  df <- df |> mutate(across(all_of(char_cols), as.factor))
+  
+  factor_cols <- names(df)[sapply(df, is.factor)]
+  
+  for(col in setdiff(factor_cols, "udehold")){
+    tbl <- sort(table(df[[col]]), decreasing=TRUE)
+    if(length(tbl) > max_levels){
+      top_levels <- names(tbl)[1:max_levels]
+      df[[col]] <- as.character(df[[col]])
+      df[[col]][!df[[col]] %in% top_levels] <- "Andre"
+      df[[col]] <- as.factor(df[[col]])
+    }
+  }
+  
+  # Dummy-kodning
+  df <- fastDummies::dummy_cols(
+    df,
+    select_columns = factor_cols,
+    remove_first_dummy = TRUE,
+    remove_selected_columns = TRUE
+  )
+  
+  df
+}
+
+```
+
+## Opbygning af Stepwise datasæt
+
+Krav til datasættet er:
+
+-Dummy-kodet
+
+-Ingen standardisering
+
+-Ingen VIF-fjernelse
+
+```{r}
+#| label: Stepwise datasæt
+#| message: false
+#| warning: false
+#| 
+build_stepwise_dataset <- function(df_raw, target="tilskuertal", max_levels=5, top_udehold=5){
+  
+  df <- build_base_dataset(df_raw, target=target, max_levels=max_levels)
+  
+  # Reducer udehold
+  if("udehold" %in% names(df)){
+    df$udehold <- as.character(df$udehold)
+    top_uh <- names(sort(table(df$udehold), decreasing=TRUE))[1:top_udehold]
+    df$udehold[!df$udehold %in% top_uh] <- "Andre"
+    df$udehold <- as.factor(df$udehold)
+  }
+  
+  # Fjern near-zero variance
+  nzv <- caret::nearZeroVar(df)
+  if(length(nzv) > 0) df <- df[, -nzv, drop=FALSE]
+  
+  df
+}
+
+```
+
+## Opbygning af PCR/PLS datasæt
+
+Vi bruger overstående funktion (reference) til at bygge et datasæt, som
+vi kan bruge til pcr / pls. Krav til datasættet er: -Kun numeriske
+variabler -Model matrix -Standardisering sker i modellen (scale=TRUE)
+
+```{r}
+#| label: PCR/PLS datasæt
+#| message: false
+#| warning: false
+
+build_pcr_pls_dataset <- function(df_raw, target="tilskuertal"){
+  df <- build_base_dataset(df_raw, target=target, max_levels=10)
+  
+  X <- model.matrix(as.formula(paste(target, "~ .")), data=df)[, -1]
+  df_out <- as.data.frame(X)
+  df_out[[target]] <- df[[target]]
+  
+  df_out
+}
+
+```
+
+## Opbygning af lasso/ridge datasæt
+
+Vi bruger overstående funktion (reference) til at bygge et datasæt, som
+vi kan bruge til lasso/ridge. Krav til datasættet er: -Dummy-kodet
+-Numerisk matrix -Near-zero variance, OK at fjerne -Standardisering sker
+i glmnet
+
+```{r}
+#| label: lasso/ridge datasæt
+#| message: false
+#| warning: false
+
+build_lasso_ridge_dataset <- function(df_raw, target="tilskuertal"){
+  df <- build_base_dataset(df_raw, target=target, max_levels=10)
+  
+  y <- df[[target]]
+  X <- df |> select(-all_of(target)) |> select(where(is.numeric))
+  
+  nzv <- caret::nearZeroVar(X)
+  if(length(nzv) > 0) X <- X[, -nzv, drop=FALSE]
+  
+  cbind(X, tilskuertal=y)
+}
+
+```
+
+## Opdel i fire datasæt
+
+Her deffinerer vi de fire datasæt, som vi skal køre modellerne på
+senere.
+
+```{r}
+#| label: Definering af fire datasæt
+#| message: false
+#| warning: false
+
+datasets_raw <- list(
+  flere_mdr = df |> 
+    select(
+      -matches("^dag10|^dag7|^dag3"),
+      -placering_lag_hjemmehold, 
+      -placering_lag_udehold,
+      -lag_tilskuer
+    ),
+  d10 = df |> select(-matches("^dag7|^dag3")),
+  d7 = df |> select(-matches("^dag10|^dag3")),
+  d3 = df |> select(-matches("^dag10|^dag7"))
+)
+```
+
+Vi bruger funktionen (reference) til at inddele datasæts til modellerne
+herunder.
+
+```{r}
+
+#| message: false
+#| warning: false
+stepwise_flere_mdr <- build_stepwise_dataset(datasets_raw$flere_mdr)
+stepwise_10d       <- build_stepwise_dataset(datasets_raw$d10)
+stepwise_7d        <- build_stepwise_dataset(datasets_raw$d7)
+stepwise_3d        <- build_stepwise_dataset(datasets_raw$d3)
+
+pcr_pls_flere_mdr  <- build_pcr_pls_dataset(datasets_raw$flere_mdr)
+pcr_pls_10d        <- build_pcr_pls_dataset(datasets_raw$d10)
+pcr_pls_7d         <- build_pcr_pls_dataset(datasets_raw$d7)
+pcr_pls_3d         <- build_pcr_pls_dataset(datasets_raw$d3)
+
+lasso_ridge_flere_mdr <- build_lasso_ridge_dataset(datasets_raw$flere_mdr)
+lasso_ridge_10d       <- build_lasso_ridge_dataset(datasets_raw$d10)
+lasso_ridge_7d        <- build_lasso_ridge_dataset(datasets_raw$d7)
+lasso_ridge_3d        <- build_lasso_ridge_dataset(datasets_raw$d3)
+
+```
+
+# Forward and backward stepwice selection (funktion) {#sec-forward-and-backward-stepwice-selection-funktion-}
+
+## Split i test og træningsdatasæt {#sec-split-i-test-og-træningsdatasæt}
+
+Der oprettes en funktion til at splitte hvert datasæt i trænings- og
+testdatasæt og samtidig sikre funktionen, at variabler der er gemt som
+faktorer har samme levels i både trænings- og testdatasætte. Hvis ikke
+det er tilfældet, vil kodningen fejle senere i processen.
+
+```{r}
+#| label: Split af datasæt 
+#| message: false
+#| warning: false
+make_split <- function(dat, prop_train = 2/3, seed = 3) {
+  set.seed(seed)
+  n <- nrow(dat)
+  idx <- sample(seq_len(n), floor(prop_train * n))
+  
+  train <- dat[idx, ]
+  test  <- dat[-idx, ]
+  
+  factor_vars <- names(dat)[sapply(dat, is.factor)]
+  for (v in factor_vars) {
+    levs <- levels(dat[[v]])
+    train[[v]] <- factor(train[[v]], levels = levs)
+    test[[v]]  <- factor(test[[v]],  levels = levs)
+  }
+  
+  list(train = train, test = test)
+}
+
+# --- split stepwise-datasæt ---
+split_months <- make_split(stepwise_flere_mdr)
+split_10     <- make_split(stepwise_10d)
+split_7      <- make_split(stepwise_7d)
+split_3      <- make_split(stepwise_3d)
+```
+
+## Backward subset selection (funktion) {#sec-backward-subset-selection}
+
+Funktion der kører backward stepwice selection metoden:
+
+```{r}
+#| label: backward stepwice selection
+#| message: false
+#| warning: false
+
+fit_backward <- function(split) {
+  train <- split$train
+  
+  y <- train$tilskuertal
+  xvars <- setdiff(names(train), "tilskuertal")
+  
+  regfit <- regsubsets(
+    x = train[, xvars, drop = FALSE],
+    y = y,
+    nvmax = min(ncol(train) - 1, nrow(train) - 1),
+    method = "backward"
+  )
+  
+  reg_sum <- summary(regfit)
+  
+  best_cp  <- which.min(reg_sum$cp)
+  best_bic <- which.min(reg_sum$bic)
+  
+  vars_cp  <- setdiff(names(coef(regfit, best_cp)), "(Intercept)")
+  vars_bic <- setdiff(names(coef(regfit, best_bic)), "(Intercept)")
+  
+  list(
+    regobj   = regfit,
+    summary  = reg_sum,
+    model_cp  = lm(tilskuertal ~ ., data = train[, c("tilskuertal", vars_cp),  drop = FALSE]),
+    model_bic = lm(tilskuertal ~ ., data = train[, c("tilskuertal", vars_bic), drop = FALSE]),
+    vars_cp  = vars_cp,
+    vars_bic = vars_bic
+  )
+}
+```
+
+Her laves en liste for hvert af vores fire datasæt, først samles de fire
+split objekter i en liste som efterfølgende bliver navngivet med
+names_list. Backward_list bliver til en tom liste, med en længde
+svarende til indeholdet i split_list og pladserne navngives herefter med
+names(backward_list).
+
+Det hele kører over de fire splists igennem en løkke, som returnere
+objekterne fra funktionen ovenover og ligger dem på plads i
+backward_list.
+
+```{r}
+#| label: Opbygning af backward list
+#| message: false
+#| warning: false
+split_list  <- list(split_months, split_10, split_7, split_3)
+names_list  <- c("months", "s10", "s7", "s3")
+
+backward_list <- setNames(vector("list", 4), names_list)
+
+for (i in seq_along(split_list)) {
+  backward_list[[i]] <- fit_backward(split_list[[i]])
+}
+```
+
+## Forward subset selection (funktion) {#sec-forward-subset-selection}
+
+Funktion der kører forward subset selection metoden:
+
+```{r}
+#| label: forward subset selection
+#| message: false
+#| warning: false
+
+fit_forward <- function(split) {
+  train <- split$train
+  
+  y <- train$tilskuertal
+  xvars <- setdiff(names(train), "tilskuertal")
+  
+  regfit <- regsubsets(
+    x = train[, xvars, drop = FALSE],
+    y = y,
+    nvmax = min(ncol(train) - 1, nrow(train) - 1),
+    method = "forward"
+  )
+  
+  reg_sum <- summary(regfit)
+  
+  best_cp  <- which.min(reg_sum$cp)
+  best_bic <- which.min(reg_sum$bic)
+  
+  vars_cp  <- setdiff(names(coef(regfit, best_cp)), "(Intercept)")
+  vars_bic <- setdiff(names(coef(regfit, best_bic)), "(Intercept)")
+  
+  list(
+    regobj   = regfit,
+    summary  = reg_sum,
+    model_cp  = lm(tilskuertal ~ ., data = train[, c("tilskuertal", vars_cp),  drop = FALSE]),
+    model_bic = lm(tilskuertal ~ ., data = train[, c("tilskuertal", vars_bic), drop = FALSE]),
+    vars_cp  = vars_cp,
+    vars_bic = vars_bic
+  )
+}
+
+forward_list <- setNames(vector("list", 4), names_list)
+
+for (i in seq_along(split_list)) {
+  forward_list[[i]] <- fit_forward(split_list[[i]])
+}
+```
+
+Her laves en liste for hvert af vores fire datasæt, først samles de fire
+split objekter i en liste som efterfølgende bliver navngivet med
+names_list. forward_list bliver til en tom liste, med en længde svarende
+til indeholdet i split_list og pladserne navngives herefter med
+names(forward_list).
+
+Det hele kører over de fire splists igennem en løkke, som returnere
+objekterne fra funktionen ovenover og ligger dem på plads i
+forward_list.
+
+```{r}
+#| label: Opbygning af forward list
+#| message: false
+#| warning: false
+
+split_list <- list(split_months, split_10, split_7, split_3)
+names_list <- c("months", "s10", "s7", "s3")
+
+forward_list <- vector("list", length(split_list))
+names(forward_list) <- names_list
+
+for (i in seq_along(split_list)) {
+  forward_list[[i]] <- fit_forward(split_list[[i]])
+}
+```
+
+### Visualisering af backward og forward subset selection {#sec-visualisering-af-backward-og-forward-subset-selection}
+
+Vi bygger en funktion der laver et samlet datasæt over
+residualer/kriterier fra både backward og forward subset selection
+funktionerne.
+
+```{r}
+#| label: Samlet datasæt backward/forward
+#| message: false
+#| warning: false
+
+make_metrics <- function(back_obj, fwd_obj) {
+  sb <- back_obj$summary
+  sf <- fwd_obj$summary
+
+  rbind(
+    data.frame(
+      NumVars    = seq_along(sb$cp),
+      AdjustedR2 = sb$adjr2,
+      Cp         = sb$cp,
+      BIC        = sb$bic,
+      Direction  = "Backward"
+    ),
+    data.frame(
+      NumVars    = seq_along(sf$cp),
+      AdjustedR2 = sf$adjr2,
+      Cp         = sf$cp,
+      BIC        = sf$bic,
+      Direction  = "Forward"
+    )
+  )
+}
+
+```
+
+Her kodes en funktion, der laver tre grafer som kan bruges til
+sammenligning af backward og forward modellerne på tværs af model
+størrelser. Graferne lægges ved siden af hinanden i én række.
+
+```{r}
+#| label: Grafer backward/forward
+#| message: false
+#| warning: false
+row_plots <- function(metrics, title_prefix) {
+  cols <- c(Forward = "blue", Backward = "darkgreen")
+
+  best_r2  <- metrics %>% group_by(Direction) %>% slice_max(AdjustedR2, n = 1, with_ties = FALSE)
+  best_cp  <- metrics %>% group_by(Direction) %>% slice_min(Cp,         n = 1, with_ties = FALSE)
+  best_bic <- metrics %>% group_by(Direction) %>% slice_min(BIC,        n = 1, with_ties = FALSE)
+
+  base_theme <- theme_minimal() +
+    theme(legend.position = "none",
+          plot.title = element_text(size = 10, hjust = 0.5, face = "bold"))
+
+  make_panel <- function(y, ylab, best_df) {
+    ggplot(metrics, aes(NumVars, .data[[y]], colour = Direction)) +
+      geom_line(linewidth = 0.9) +
+      geom_point(data = best_df, size = 2) +
+      scale_colour_manual(values = cols) +
+      labs(title = title_prefix, x = "Antal variabler", y = ylab) +
+      base_theme
+  }
+
+  p1 <- make_panel("AdjustedR2", "Adjusted R²", best_r2)
+  p2 <- make_panel("Cp",         "Cp",          best_cp)
+  p3 <- make_panel("BIC",        "BIC",         best_bic)
+
+  p1 | p2 | p3
+}
+
+```
+
+Herunder kodes et fælles "metrics"-datasæt, for de fire datasæt.
+Efterfølgende laves der et sæt på tre plots for hver metics vha.
+funktionen (reference).
+
+```{r}
+#| label: Fælles "metrics"-datasæt
+#| message: false
+#| warning: false
+metrics_months <- make_metrics(backward_list$months, forward_list$months)
+metrics_10     <- make_metrics(backward_list$s10,    forward_list$s10)
+metrics_7      <- make_metrics(backward_list$s7,     forward_list$s7)
+metrics_3      <- make_metrics(backward_list$s3,     forward_list$s3)
+
+row_months <- row_plots(metrics_months, "Months")
+row_10     <- row_plots(metrics_10,     "10 dage")
+row_7      <- row_plots(metrics_7,      "7 dage")
+row_3      <- row_plots(metrics_3,      "3 dage")
+```
+
+Her laves en kode til den samlede figur, hvor vi først udtrækker en
+fælles legend og derefter stabler alle rækker af plots under hinanden.
+
+En legend er boksen der forklarer farver, linjer mm. i plottet.
+
+```{r}
+#| label: Samlet figuer backward/forward
+#| message: false
+#| warning: false
+#| fig-width: 10
+#| fig-height: 8
+#| out-width: "100%"
+legend_plot <- ggplot(metrics_months,
+                      aes(NumVars, AdjustedR2, colour = Direction)) +
+  geom_line() +
+  scale_colour_manual(values = c(Forward = "blue", Backward = "darkgreen")) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(colour = "Metode")
+
+leg <- cowplot::get_legend(legend_plot)
+
+final_fig <- wrap_elements(leg) /
+  row_months /
+  row_10 /
+  row_7 /
+  row_3
+
+final_fig
+
+```
+
+Funktion til at trække info ud fra hhv. forward eller backward
+
+```{r}
+#| label: Trækker information ud fra backward/forward
+#| message: false
+#| warning: false
+
+extract_best_info <- function(obj, split_name, direction_label) {
+  s <- obj$summary
+
+  tibble(
+    Split     = split_name,
+    Direction = direction_label,
+    Criterion = c("AdjustedR2", "Cp", "BIC"),
+    BestSize  = c(
+      which.max(s$adjr2),
+      which.min(s$cp),
+      which.min(s$bic)
+    )
+  ) |> 
+    rowwise() |> 
+    mutate(
+      Vars = list(
+        names(coef(obj$regobj, BestSize))[-1]
+      )
+    ) |> 
+    ungroup()
+}
+```
+
+Funktion der kører for alle splits, både for backward og forward
+
+```{r}
+#| label: Trækker information ud på tværs af alle splits
+#| message: false
+#| warning: false
+split_names <- c("months", "s10", "s7", "s3")
+
+overview_list <- map(split_names, function(sn) {
+  bind_rows(
+    extract_best_info(backward_list[[sn]], sn, "Backward"),
+    extract_best_info(forward_list[[sn]],  sn, "Forward")
+  )
+})
+
+overview <- bind_rows(overview_list)
+```
+
+```{r}
+#| label: overview_report
+#| message: false
+#| warning: false
+overview_report <- overview |> 
+  mutate(
+    Vars = sapply(Vars, paste, collapse = ", ")
+  )
+
+print(overview_report)
+```
+
+```{r}
+#| label: Bedste modelstørrelse
+#| message: false
+#| warning: false
+
+overview_report <- overview |> 
+  mutate(
+    Vars      = sapply(Vars, paste, collapse = ", "),
+    Vars_html = sapply(Vars, paste, collapse = "<br>")
+  )
+
+p <- ggplot(overview_report,
+            aes(x = Criterion, y = Split,
+                fill  = BestSize,
+                label = BestSize,
+                text  = paste0(
+                  "Split: ", Split,
+                  "<br>Metode: ", Direction,
+                  "<br>Kriterium: ", Criterion,
+                  "<br>Antal variabler: ", BestSize,
+                  "<br>Variabler:<br>", Vars_html
+                ))) +
+  geom_tile(color = "white") +
+  geom_text(size = 3) +
+  facet_wrap(~ Direction) +
+  scale_fill_gradient(
+    low  = "#cdeccd", 
+    high = "#006838"  
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Bedste modelstørrelse pr. split, metode og kriterium",
+    x = "Kriterium",
+    y = "Split",
+    fill = "Antal variabler"
+  )
+
+if (knitr::is_html_output()) {
+  ggplotly(p, tooltip = "text")
+} else {
+  p
+}
+```
+
+```{r}
+#| label: Bedste modelstørrelse pr. split, metode og kriterium
+#| message: false
+#| warning: false
+long_vars <- overview |> 
+  mutate(Vars_list = Vars) |> 
+  select(Split, Direction, Criterion, Vars_list) |> 
+  unnest_longer(Vars_list, values_to = "Var") |> 
+  filter(!is.na(Var))
+
+var_presence_table <- function(split_name) {
+  long_vars |> 
+    filter(Split == split_name) |> 
+    mutate(Model = paste(Direction, Criterion, sep = "_")) |> 
+    select(Var, Model) |> 
+    mutate(value = "✓") |> 
+    distinct() |> 
+    pivot_wider(
+      names_from  = Model,
+      values_from = value,
+      values_fill = ""
+    ) |> 
+    arrange(Var)
+}
+
+tbl_months_vars <- var_presence_table("months")
+
+```
+
+```{r}
+#| label: heatmap
+#| message: false
+#| warning: false
+heatmap_split <- function(split_name) {
+  long_vars |> 
+    mutate(
+      Model = paste(Direction, Criterion, sep = "_"),
+      present = 1
+    ) |> 
+    filter(Split == split_name) |> 
+    ggplot(aes(x = Model, y = Var, fill = factor(present))) +
+    geom_tile(color = "white") +
+    scale_fill_manual(
+      values = c("1" = "darkgreen"),
+      guide  = "none"
+    ) +
+    labs(
+      title = paste("Variabler med i modeller –", split_name),
+      x = "Modeller",
+      y = "Variabel"
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+
+
+heatmap_months <- heatmap_split("months")
+heatmap_months
+
+```
+
+### Tabel oversigt baseret på BIC {#sec-tabel-oversigt-baseret-på-bic}
+
+```{r}
+#| label: Tabel oversigt baseret på BIC
+#| message: false
+#| warning: false
+# --- Funktion til at udtrække BIC-RMSE for ethvert stepwise resultat ---
+extract_bic_rmse <- function(results_list, splits_list, model_name) {
+  tibble_list <- lapply(names(results_list), function(ds) {
+    obj   <- results_list[[ds]]
+    train <- splits_list[[ds]]$train
+    test  <- splits_list[[ds]]$test
+    
+    # BIC-variabler
+    vars <- obj$vars_bic
+    
+    # Fit model på træning med BIC-variabler
+    model <- lm(as.formula(paste("tilskuertal ~", paste(vars, collapse = "+"))), data = train)
+    
+    # Predict
+    train_pred <- predict(model, newdata = train)
+    test_pred  <- predict(model, newdata = test)
+    
+    tibble(
+      Datasæt         = ds,
+      Model           = model_name,
+      Antal_variabler = length(vars),
+      RMSE_train      = round(sqrt(mean((train$tilskuertal - train_pred)^2)), 2),
+      RMSE_test       = round(sqrt(mean((test$tilskuertal - test_pred)^2)), 2)
+    )
+  })
+  
+  bind_rows(tibble_list)
+}
+
+# --- Split-liste ---
+splits_list <- list(
+  months = split_months,
+  s10    = split_10,
+  s7     = split_7,
+  s3     = split_3
+)
+
+# --- Opsamling for backward og forward ---
+backward_bic <- extract_bic_rmse(backward_list, splits_list, "Backward")
+forward_bic  <- extract_bic_rmse(forward_list,  splits_list, "Forward")
+
+# --- Kombiner i én tabel ---
+bic_summary <- bind_rows(backward_bic, forward_bic) %>%
+  mutate(Datasæt = factor(Datasæt,
+                          levels = c("months","s10","s7","s3"),
+                          labels = c("mdr.","10 dage","7 dage","3 dage")))
+
+bic_summary
+
+```
+
+# LASSO/Ridge {#sec-lassoridge}
+
+## Fælles funktion til k-fold CV for glmnet {#sec-fælles-funktion-til-k-fold-cv-for-glmnet}
+
+```{r}
+#| label: Fælles funktion til k-fold CV for glmnet
+#| message: false
+#| warning: false
+k_fold_cv_glmnet <- function(df, alpha = 1, target = "tilskuertal", k = 5, seed = 3) {
+  set.seed(seed)
+  X <- as.matrix(df[, setdiff(names(df), target)])
+  y <- df[[target]]
+  
+  folds <- caret::createFolds(y, k = k, list = TRUE)
+  rmse_fold <- numeric(k)
+  
+  for(i in seq_along(folds)){
+    train_idx <- setdiff(seq_len(nrow(df)), folds[[i]])
+    X_train <- X[train_idx, , drop=FALSE]
+    y_train <- y[train_idx]
+    X_test  <- X[folds[[i]], , drop=FALSE]
+    y_test  <- y[folds[[i]]]
+    
+    cv_model <- cv.glmnet(X_train, y_train, alpha = alpha)
+    lam <- cv_model$lambda.min
+    pred <- predict(cv_model, newx = X_test, s = lam)
+    rmse_fold[i] <- sqrt(mean((y_test - pred)^2))
+  }
+  
+  # Valgte variabler på hele datasættet
+  cv_full <- cv.glmnet(X, y, alpha = alpha)
+  selected_vars <- rownames(coef(cv_full, s = "lambda.min"))[coef(cv_full, s = "lambda.min")[,1] != 0]
+  selected_vars <- setdiff(selected_vars, "(Intercept)")
+  
+  tibble(
+    RMSE_mean = mean(rmse_fold),
+    RMSE_sd   = sd(rmse_fold),
+    n_vars    = length(selected_vars),
+    selected_vars = list(selected_vars),
+    cv_object = list(cv_full)  # Gem CV-objekt til plotting
+  )
+}
+
+
+```
+
+## LASSO funktion kørsel {#sec-lasso-funktion-kørsel}
+
+```{r}
+#| label: LASSO funktion kørsel
+#| message: false
+#| warning: false
+lasso_datasets <- list(
+  "Flere måneder før" = lasso_ridge_flere_mdr,
+  "10 dage før"       = lasso_ridge_10d,
+  "7 dage før"        = lasso_ridge_7d,
+  "3 dage før"        = lasso_ridge_3d
+)
+
+lasso_cv_results <- map_df(lasso_datasets, 
+                           ~k_fold_cv_glmnet(.x, alpha = 1, k = 5), 
+                           .id = "Datasæt")
+
+lasso_cv_results
+
+```
+
+## Ridge funktion kørsel {#sec-ridge-funktion-koersel}
+
+```{r}
+#| label: Ridge funktion kørsel
+#| message: false
+#| warning: false
+ridge_datasets <- lasso_datasets  # Samme datasæt
+
+ridge_cv_results <- map_df(ridge_datasets, 
+                           ~k_fold_cv_glmnet(.x, alpha = 0, k = 5), 
+                           .id = "Datasæt")
+
+ridge_cv_results
+
+```
+
+## Samligning af RMSE og antal variabler {#sec-samligning-af-rmse-og-antal-variabler}
+
+```{r}
+#| label: Samligning af RMSE og antal variabler
+#| message: false
+#| warning: false
+rmse_var_table <- bind_rows(
+  lasso_cv_results |>  mutate(Model = "LASSO"),
+  ridge_cv_results |>  mutate(Model = "Ridge")
+) |> 
+  select(Datasæt, Model, n_vars, RMSE_mean, RMSE_sd)
+
+rmse_var_table
+
+```
+
+## Plotting af CV-kurver {#sec-plotting-af-cv-kurver}
+
+```{r}
+#| label: CV-kurver
+#| message: false
+#| warning: false
+#| fig-width: 10
+#| fig-height: 8
+#| out-width: "100%"
+# LASSO
+lasso_cv_results <- map(lasso_datasets, ~k_fold_cv_glmnet(.x, alpha = 1, k = 5))
+
+# Ridge
+ridge_cv_results <- map(ridge_datasets, ~k_fold_cv_glmnet(.x, alpha = 0, k = 5))
+
+par(mfrow = c(length(lasso_datasets), 2), mar = c(4, 4, 2, 1))
+for(ds in names(lasso_datasets)){
+  plot(lasso_cv_results[[ds]]$cv_object[[1]]); title(paste("LASSO –", ds))
+  plot(ridge_cv_results[[ds]]$cv_object[[1]]); title(paste("Ridge –", ds))
+}
+par(mfrow = c(1,1))
+
+```
+
+## Oversigt over LASSO-udvalgte variabler {#sec-oversigt-over-lasso-udvalgte-variabler}
+
+```{r}
+#| label: LASSO-udvalgte variabler
+#| message: false
+#| warning: false
+
+lasso_selected_vars <- map(lasso_cv_results, ~ .x$selected_vars[[1]])
+lasso_selected_vars
+```
+
+# PCR/PLS dataset {#sec-pcrpls-dataset}
+
+## PCR modellen {#sec-pcr-modellen}
+
+### K_fold funktion for PCR {#sec-k_fold-funktion-for-pcr}
+
+```{r}
+#| label: K_fold funktion for PCR
+#| message: false
+#| warning: false
+k_fold_cv_pcr <- function(df, target = "tilskuertal", k = 5, ncomp_max = 25, seed = 3){
+  set.seed(seed)
+  y <- df[[target]]
+  folds <- caret::createFolds(y, k = k, list = TRUE)
+  
+  rmse_fold <- numeric(k)
+  
+  # Fjern NZV kolonner
+  df_clean <- df %>% select(-nearZeroVar(.))
+  
+  # Fit PCR på hvert fold
+  for(i in seq_along(folds)){
+    train_idx <- setdiff(seq_len(nrow(df_clean)), folds[[i]])
+    train_df <- df_clean[train_idx, , drop = FALSE]
+    test_df  <- df_clean[folds[[i]], , drop = FALSE]
+    
+    pcr_fit <- pcr(as.formula(paste(target, "~ .")), data = train_df, 
+            scale = TRUE, validation = "CV", segments = 10)
+    
+    ncomp_use <- min(ncol(train_df) - 1, ncomp_max)
+    
+    preds <- predict(pcr_fit, newdata = test_df, ncomp = ncomp_use)
+    rmse_fold[i] <- sqrt(mean((preds - test_df[[target]])^2))
+  }
+  
+  # Fit PCR på hele datasættet for valgte komponenter
+  pcr_full <- pcr(as.formula(paste(target, "~ .")), data = df_clean, 
+            scale = TRUE, validation = "CV", segments = k)
+  ncomp_use <- min(ncol(df_clean)-1, ncomp_max)
+  
+  list(
+    RMSE_mean = mean(rmse_fold),
+    RMSE_sd   = sd(rmse_fold),
+    ncomp_use = ncomp_use,
+    pcr_fit   = pcr_full
+  )
+}
+
+```
+
+### Kør PCR på alle datasæt med k-fold CV {#sec-kor-pcr-på-alle-datasaet-med-k-fold-cv}
+
+```{r}
+#| label: PCR på alle datasæt med k-fold CV
+#| message: false
+#| warning: false
+datasets_pcr_pls <- list(
+  flere_mdr = pcr_pls_flere_mdr,
+  d10       = pcr_pls_10d,
+  d7        = pcr_pls_7d,
+  d3        = pcr_pls_3d
+)
+
+pcr_cv_results <- map(datasets_pcr_pls, ~k_fold_cv_pcr(.x, target="tilskuertal", k=5))
+
+```
+
+### Saml RMSE-tabeller {#sec-saml-rmse-tabeller}
+
+```{r}
+#| label: RMSE-tabeller
+#| message: false
+#| warning: false
+pcr_rmse_table <- tibble(
+  Dataset = names(pcr_cv_results),
+  RMSE_mean = sapply(pcr_cv_results, function(x) x$RMSE_mean),
+  RMSE_sd   = sapply(pcr_cv_results, function(x) x$RMSE_sd),
+  ncomp_use = sapply(pcr_cv_results, function(x) x$ncomp_use)
+)
+
+pcr_rmse_table
+
+```
+
+## PLS modellen {#sec-pls-modellen}
+
+### K_fold funktion for PLS {#sec-k_fold-funktion-for-pls}
+
+NZV-fjernelsen fjerner kolonner med nær nul-varians, som forhindrer
+problemer med kolonner som ikke bidrager til modellen.
+
+```{r}
+#| label: K_fold funktion for PLS
+#| message: false
+#| warning: false
+k_fold_cv_pls <- function(df, target = "tilskuertal", k = 5, ncomp_max = 25, seed = 3){
+  set.seed(seed)
+  y <- df[[target]]
+  folds <- caret::createFolds(y, k = k, list = TRUE)
+  
+  rmse_fold <- numeric(k)
+  
+  # Fjern near-zero variance kolonner
+  nzv <- nearZeroVar(df)
+  if(length(nzv) > 0) df_clean <- df[, -nzv, drop = FALSE] else df_clean <- df
+  
+  # Kør PLS på hvert fold
+  for(i in seq_along(folds)){
+    train_idx <- setdiff(seq_len(nrow(df_clean)), folds[[i]])
+    train_df <- df_clean[train_idx, , drop = FALSE]
+    test_df  <- df_clean[folds[[i]], , drop = FALSE]
+    
+    pls_fit <- plsr(as.formula(paste(target, "~ .")), data = train_df, 
+              scale = TRUE, validation = "CV", segments = k)
+    
+    ncomp_use <- min(ncol(train_df)-1, ncomp_max)
+    
+    preds <- predict(pls_fit, newdata = test_df, ncomp = ncomp_use)
+    rmse_fold[i] <- sqrt(mean((preds - test_df[[target]])^2))
+  }
+  
+  # Fit PLS på hele datasættet
+  pls_full <- plsr(as.formula(paste(target, "~ .")), data = df_clean, 
+              scale = TRUE, validation = "CV", segments = k)
+  ncomp_use <- min(ncol(df_clean)-1, ncomp_max)
+  
+  list(
+    RMSE_mean = mean(rmse_fold),
+    RMSE_sd   = sd(rmse_fold),
+    ncomp_use = ncomp_use,
+    pls_fit   = pls_full
+  )
+}
+```
+
+### Kør PLS på alle datasæt {#sec-kor-pls-på-alle-datasaet}
+
+```{r}
+#| label: PLS på alle datasæt
+#| message: false
+#| warning: false
+datasets_pcr_pls <- list(
+  flere_mdr = pcr_pls_flere_mdr,
+  d10       = pcr_pls_10d,
+  d7        = pcr_pls_7d,
+  d3        = pcr_pls_3d
+)
+
+pls_cv_results <- map(datasets_pcr_pls, ~k_fold_cv_pls(.x, target="tilskuertal", k=5))
+
+```
+
+### Lav RMSE-tabel {#sec-lav-rmse-tabel}
+
+```{r}
+#| label: RMSE-tabel
+#| message: false
+#| warning: false
+pls_rmse_table <- tibble(
+  Dataset = names(pls_cv_results),
+  RMSE_mean = sapply(pls_cv_results, function(x) x$RMSE_mean),
+  RMSE_sd   = sapply(pls_cv_results, function(x) x$RMSE_sd),
+  ncomp_use = sapply(pls_cv_results, function(x) x$ncomp_use)
+)
+
+pls_rmse_table
+```
+
+# Best subset selection {#sec-best-subset-selection}
+
+## Predict for regsubsets
+
+```{r}
+#| label: Predict for regsubsets
+#| message: false
+#| warning: false
+# --- Funktion: RMSE ---
+calc_rmse <- function(obs, pred){
+  sqrt(mean((obs - pred)^2))
+}
+
+# --- Funktion: Predict for regsubsets ---
+predict.regsubsets <- function(object, formula, newdata, id){
+  mat <- model.matrix(formula, newdata)
+  coefi <- coef(object, id=id)
+  vars  <- names(coefi)
+  mat[, vars, drop = FALSE] %*% coefi
+}
+```
+
+## Funktion for at køre K_fold CV {#sec-funktion-for-at-koere-k_fold-cv}
+
+```{r}
+#| label: Funktion for at køre K_fold CV
+#| message: false
+#| warning: false
+# --- K-fold CV for Best Subset ---
+k_fold_cv_best_subset <- function(df, target="tilskuertal", k=5, seed=3){
+  set.seed(seed)
+  n <- nrow(df)
+  folds <- sample(rep(1:k, length.out=n))
+  
+  f <- as.formula(paste(target, "~ ."))
+  nvmax <- ncol(df) - 1
+  
+  # Gem resultater pr fold
+  fold_results <- vector("list", k)
+  
+  for(i in 1:k){
+    train <- df[folds != i, ]
+    test  <- df[folds == i, ]
+    
+    regfit <- regsubsets(f, data=train, nvmax=nvmax)
+    reg_sum <- summary(regfit)
+    
+    best_cp  <- which.min(reg_sum$cp)
+    best_bic <- which.min(reg_sum$bic)
+    
+    extract_fold <- function(best_id){
+      vars <- names(coef(regfit, best_id))[-1]
+      pred  <- predict.regsubsets(regfit, f, test, id=best_id)
+      calc_rmse(test[[target]], pred)
+    }
+    
+    fold_results[[i]] <- tibble(
+      fold = i,
+      RMSE_cp  = extract_fold(best_cp),
+      RMSE_bic = extract_fold(best_bic),
+      n_vars_cp  = length(coef(regfit, best_cp)) - 1,
+      n_vars_bic = length(coef(regfit, best_bic)) - 1
+    )
+  }
+  
+  # Sammensæt folds og beregn gennemsnit
+  all_folds <- bind_rows(fold_results)
+  tibble(
+    method = "Best Subset",
+    Kriterium = c("Cp", "BIC"),
+    RMSE_mean = c(mean(all_folds$RMSE_cp), mean(all_folds$RMSE_bic)),
+    RMSE_sd   = c(sd(all_folds$RMSE_cp), sd(all_folds$RMSE_bic)),
+    n_vars    = round(c(mean(all_folds$n_vars_cp), mean(all_folds$n_vars_bic)))
+  )
+}
+```
+
+## Køre funktionen på alle datasæt {#sec-koere-funktionen-på-alle-datasaet}
+
+```{r}
+#| label: Køre funktionen på alle datasæt
+#| message: false
+#| warning: false
+# --- Kør Best Subset CV på alle datasæt ---
+stepwise_datasets <- list(
+  stepwise_flere_mdr = stepwise_flere_mdr,
+  stepwise_10d       = stepwise_10d,
+  stepwise_7d        = stepwise_7d,
+  stepwise_3d        = stepwise_3d
+)
+
+bestsubset_cv_results <- map_df(stepwise_datasets, k_fold_cv_best_subset, .id="Datasæt")
+
+bestsubset_cv_results
+```
+
+## Plot RMSE for Cp og BIC {#sec-plot-rmse-for-cp-og-bic}
+
+```{r}
+#| label: Plot RMSE for Cp og BIC
+#| message: false
+#| warning: false
+ggplot(bestsubset_cv_results, aes(x = RMSE_mean, y = Datasæt, color = Kriterium)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(xmin=RMSE_mean-RMSE_sd, xmax=RMSE_mean+RMSE_sd), width=0.2) +
+  theme_minimal() +
+  labs(title="Best Subset: K-fold CV RMSE",
+       x="RMSE", y="Datasæt", color="Kriterium")
+```
+
+## Forskellen mellem Cp og BIC {#sec-forskellen-mellem-cp-og-bic}
+
+```{r}
+#| label: Forskellen mellem Cp og BIC
+#| message: false
+#| warning: false
+bestsubset_cv_results |> 
+  select(Datasæt, Kriterium, RMSE_mean, n_vars) |> 
+  arrange(Datasæt, Kriterium)
+```
+
+# Oversigt over alle RMSE for alle modeller {#sec-oversigt-over-alle-rmse-for-alle-modeller}
+
+## Funktion til standardisering af datasætnavne {#sec-funktion-til-standardisering-af-datasaetnavne}
+
+```{r}
+#| label: Standardisering af datasætnavne
+#| message: false
+#| warning: false
+standardize_ds <- function(ds){
+  dplyr::recode(ds,
+    stepwise_flere_mdr = "months",
+    stepwise_10d       = "s10",
+    stepwise_7d        = "s7",
+    stepwise_3d        = "s3",
+    flere_mdr          = "months",
+    d10                = "s10",
+    d7                 = "s7",
+    d3                 = "s3",
+    months             = "months",
+    s10                = "s10",
+    s7                 = "s7",
+    s3                 = "s3",
+    `7 dage før`       = "s7",
+    `10 dage før`      = "s10",
+    `Flere måneder før`= "months",
+    `3 dage før`       = "s3",
+    .default           = ds
+  )
+}
+
+```
+
+## Opsamling på LASSO og Ridge {#sec-opsamling-paa-lasso-og-ridge}
+
+```{r}
+#| label: Opsamling på LASSO og Ridge
+#| message: false
+#| warning: false
+# LASSO
+lasso_ridge_summary <- map_df(names(lasso_cv_results), function(ds){
+  res <- lasso_cv_results[[ds]]
+  tibble(
+    Datasæt = standardize_ds(ds),
+    Model = "LASSO",
+    RMSE_test = res$RMSE_mean,
+    Antal_variabler = res$n_vars
+  )
+}) |> 
+  bind_rows(
+    map_df(names(ridge_cv_results), function(ds){
+      res <- ridge_cv_results[[ds]]
+      tibble(
+        Datasæt = standardize_ds(ds),
+        Model = "Ridge",
+        RMSE_test = res$RMSE_mean,
+        Antal_variabler = res$n_vars
+      )
+    })
+  )
+
+```
+
+## Opsamling PCR {#sec-opsamling-pcr}
+
+```{r}
+#| label: Opsamling PCR
+#| message: false
+#| warning: false
+pcr_summary <- imap_dfr(pcr_cv_results, ~tibble(
+  Datasæt = standardize_ds(.y),
+  Model = "PCR",
+  RMSE_test = round(.x$RMSE_mean, 2),
+  Antal_variabler = .x$ncomp_use
+))
+
+```
+
+## Opsamling PLS {#sec-opsamling-pls}
+
+```{r}
+#| label: Opsamling PLS
+#| message: false
+#| warning: false
+pls_summary <- imap_dfr(pls_cv_results, ~tibble(
+  Datasæt = standardize_ds(.y),
+  Model = "PLS",
+  RMSE_test = round(.x$RMSE_mean, 2),
+  Antal_variabler = .x$ncomp_use
+))
+```
+
+## Opsamling Best subset {#sec-opsamling-best-subset}
+
+```{r}
+#| label: Opsamling Best subset
+#| message: false
+#| warning: false
+bestsubset_summary <- bestsubset_cv_results %>%
+  filter(Kriterium == "BIC") %>%
+  transmute(
+    Datasæt = standardize_ds(Datasæt),
+    Model = "BestSubset",
+    RMSE_test = round(RMSE_mean, 2),
+    Antal_variabler = n_vars
+  )
+```
+
+## Opsamling Backward og Forward {#sec-opsamling-backward-og-forward}
+
+```{r}
+#| label: Opsamling Backward og Forward
+#| message: false
+#| warning: false
+extract_bic_rmse <- function(results_list, splits_list, model_name){
+  lapply(names(results_list), function(ds){
+
+    obj   <- results_list[[ds]]
+    train <- splits_list[[ds]]$train
+    test  <- splits_list[[ds]]$test
+
+    vars <- if (!is.null(obj$vars_bic)) {
+      obj$vars_bic
+    } else {
+      obj$bic$vars
+    }
+
+    mod <- lm(
+      as.formula(paste("tilskuertal ~", paste(vars, collapse = "+"))),
+      data = train
+    )
+
+    test_pred <- predict(mod, newdata = test)
+
+    tibble(
+      Datasæt         = standardize_ds(ds),
+      Model           = model_name,
+      RMSE_test       = round(sqrt(mean((test$tilskuertal - test_pred)^2)), 2),
+      Antal_variabler = length(vars)
+    )
+  }) |> bind_rows()
+}
+
+splits_list <- list(
+  months = split_months,
+  s10    = split_10,
+  s7     = split_7,
+  s3     = split_3
+)
+
+backward_summary <- extract_bic_rmse(backward_list, splits_list, "Backward")
+forward_summary  <- extract_bic_rmse(forward_list,  splits_list, "Forward")
+
+```
+
+## Samlet tabel {#sec-samlet-tabel}
+
+```{r}
+#| label: Samlet tabel
+#| message: false
+#| warning: false
+all_models_summary <- bind_rows(
+  lasso_ridge_summary,
+  pcr_summary,
+  pls_summary,
+  bestsubset_summary,
+  backward_summary,
+  forward_summary
+) |> 
+  mutate(Datasæt = as.character(Datasæt)) |>    # <- vigtig
+  mutate(Datasæt = standardize_ds(Datasæt)) |> 
+  mutate(Datasæt = factor(
+    Datasæt,
+    levels = c("months","s10","s7","s3"),
+    labels = c("Flere måneder før","10 dage før","7 dage før","3 dage før")
+  ))
+
+
+# Definer ønsket rækkefølge af modeller
+model_levels <- c("LASSO", "Ridge", "PCR", "PLS", "BestSubset", "Backward", "Forward")
+
+# Rangér tabellen
+all_models_summary_ranked <- all_models_summary %>%
+  mutate(
+    Model = factor(Model, levels = model_levels)  # fast rækkefølge på modeller
+  ) |> 
+  arrange(Datasæt, Model)  # først datasæt, så model
+
+# Se resultatet
+all_models_summary_ranked
+
+
+
+
+```
+
+# De 4 datasæt opstillet i hver deres tabel {#sec-de-4-datasaet}
+
+```{r}
+#| label: 4 datasæt opstillet i hver deres tabel(1)
+#| message: false
+#| warning: false
+
+# Liste med unikke datasæt
+datasets <- unique(all_models_summary$Datasæt)
+
+# Lav en tabel pr. datasæt
+tables_per_dataset <- lapply(datasets, function(ds) {
+  all_models_summary |>
+    filter(Datasæt == ds) |>
+    arrange(RMSE_test)
+})
+
+# Navngiv tabellerne med datasætnavne
+names(tables_per_dataset) <- datasets
+
+# Loop igennem og vis dem alle
+for (ds in datasets) {
+  cat("###", ds, "\n\n")
+  tab <- tables_per_dataset[[ds]] |>
+    gt() |>
+    fmt_number(columns = where(is.numeric), decimals = 0)
+
+}
+
+
+```
+
+```{r}
+#| label: Plot RMSE vs Antal variabler
+#| message: false
+#| warning: false
+ggplot(all_models_summary, 
+       aes(x = Antal_variabler, y = RMSE_test, 
+           color = Model, shape = Datasæt)) +
+  geom_point(size = 3) +
+  geom_text(aes(label=Model), hjust=0, vjust=-0.5, size=3, check_overlap = TRUE) +
+  theme_minimal() +
+  labs(title="RMSE vs Antal variabler",
+       x="Antal variabler", 
+       y="Test RMSE",
+       color="Model",
+       shape="Datasæt")
+
+
+```
+
+## Ridge prediction model {#sec-ridge-prediction-model}
+
+```{r}
+#| label: Ridge prediction model
+#| message: false
+#| warning: false
+# --- 1. Start med skabelon for Ridge prediction ---
+prediction_ridge <- lasso_ridge_flere_mdr[1, ]  # første række som skabelon
+
+# --- 2. Sæt alle numeriske kolonner til gennemsnit ---
+num_vars <- sapply(lasso_ridge_flere_mdr, is.numeric)
+prediction_ridge[num_vars] <- lapply(
+  lasso_ridge_flere_mdr[num_vars],
+  mean,
+  na.rm = TRUE
+)
+
+# --- 3. Ret kendte variable for den specifikke kamp ---
+prediction_ridge$maaned <- 2
+prediction_ridge$runde <- 20
+
+prediction_ridge$ferie <- 1
+prediction_ridge$festival <- 0
+prediction_ridge$helligdag_flag <- 0
+prediction_ridge$hverdag_weekend_Weekend <- 1
+
+prediction_ridge$t_vkanal_3PLUS <- 1
+prediction_ridge$t_vkanal_9EREN2 <- 0
+prediction_ridge$t_vkanal_Andre <- 0
+prediction_ridge$t_vkanal_IngenTV <- 0
+prediction_ridge$t_vkanal_TV2SPORT <- 0
+prediction_ridge$t_vkanal_TV2SPORTX <- 0
+prediction_ridge$t_vkanal_TV3SPORT <- 0
+
+prediction_ridge$udehold_Andre <- 0
+prediction_ridge$udehold_BIF <- 1
+prediction_ridge$udehold_FCK <- 0
+prediction_ridge$udehold_FCM <- 0
+prediction_ridge$udehold_SIF <- 0
+prediction_ridge$udehold_SJF <- 0
+
+prediction_ridge$tid_kategori_Eftermiddag <- 0
+prediction_ridge$`tid_kategori_Sen eftermiddag` <- 0
+prediction_ridge$kamp_type_B <- 0
+
+prediction_ridge$month_mean_temp <- 2.128571
+prediction_ridge$gennemsnit_tilskuere <- 7546.500
+
+# --- 4. Træk Ridge CV objekt og valgte variabler ---
+ridge_model <- ridge_cv_results[["Flere måneder før"]]$cv_object[[1]]
+
+# 5. Brug de præcise features fra Ridge-træningen
+train_vars_ridge <- rownames(coef(ridge_model, s="lambda.min"))[-1]
+
+# 6. Tilføj manglende kolonner i prediction med 0
+missing_vars <- setdiff(train_vars_ridge, names(prediction_ridge))
+if(length(missing_vars) > 0){
+  prediction_ridge[missing_vars] <- 0
+}
+
+# 7. Sørg for korrekt rækkefølge
+X_pred_ridge <- as.matrix(prediction_ridge[, train_vars_ridge])
+
+# 8. Prediction
+pred_ridge <- predict(ridge_model, newx = X_pred_ridge, s = "lambda.min")
+
+# 9. Rund af
+round(pred_ridge, 0)
+
+coef(ridge_model, s = "lambda.min")
+
+```
+
+# Test på ridge prediction på to forskellige kampdatoer
+
+```{r}
+#| label: Test paa ridge prediction
+#| message: false
+#| warning: false
+# --- 0. Ridge model og træningsvariabler ---
+ridge_model <- ridge_cv_results[["Flere måneder før"]]$cv_object[[1]]
+train_vars_ridge <- rownames(coef(ridge_model, s="lambda.min"))[-1]
+
+# --- 1. Funktion til Ridge-forudsigelse for én kamp ---
+predict_ridge_kamp <- function(template, kendte_var) {
+  # Start med template
+  pred <- template[1, ]
+  
+  # Sæt numeriske kolonner til gennemsnit
+  num_vars <- sapply(template, is.numeric)
+  pred[num_vars] <- lapply(template[num_vars], mean, na.rm = TRUE)
+  
+  # Opdater med kendte variable
+  for(nm in names(kendte_var)) {
+    pred[[nm]] <- kendte_var[[nm]]
+  }
+  
+  # Tilføj manglende kolonner med 0
+  missing_vars <- setdiff(train_vars_ridge, names(pred))
+  if(length(missing_vars) > 0) pred[missing_vars] <- 0
+  
+  # Matrix og prediction
+  X_pred <- as.matrix(pred[, train_vars_ridge])
+  round(predict(ridge_model, newx = X_pred, s="lambda.min"), 0)
+}
+
+# --- 2. Definer kendte variable for hver kamp ---
+kamp1 <- list(
+  maaned = 2, runde = 20, ferie = 1, festival = 0, helligdag_flag = 0, hverdag_weekend_Weekend = 1,
+  t_vkanal_3PLUS = 1, t_vkanal_9EREN2 = 0, t_vkanal_Andre = 0, t_vkanal_IngenTV = 0,
+  t_vkanal_TV2SPORT = 0, t_vkanal_TV2SPORTX = 0, t_vkanal_TV3SPORT = 0,
+  udehold_Andre = 0, udehold_BIF = 1, udehold_FCK = 0, udehold_FCM = 0, 
+  udehold_SIF = 0, udehold_SJF = 0,
+  tid_kategori_Eftermiddag = 0, `tid_kategori_Sen eftermiddag` = 0, kamp_type_B = 0,
+  month_mean_temp = 2.128571, gennemsnit_tilskuere = 7546.5
+)
+
+kamp2 <- list(
+  maaned = 3, runde = 22, ferie = 0, festival = 0, helligdag_flag = 0,   
+  hverdag_weekend_Weekend = 1,
+  t_vkanal_3PLUS = 0, t_vkanal_9EREN2 = 0, t_vkanal_Andre = 0, t_vkanal_IngenTV = 1,
+  t_vkanal_TV2SPORT = 0, t_vkanal_TV2SPORTX = 0, t_vkanal_TV3SPORT = 0,
+  udehold_Andre = 1, udehold_BIF = 0, udehold_FCK = 0, udehold_FCM = 0, 
+  udehold_SIF = 0, udehold_SJF = 0,
+  tid_kategori_Eftermiddag = 0, `tid_kategori_Sen eftermiddag` = 1, kamp_type_B = 1,
+  month_mean_temp = 3.085714, gennemsnit_tilskuere = 4250.053
+)
+
+# --- 3. Lav tabel med forudsigelser ---
+results_table <- tibble(
+  Kamp = c("Kamp 1", "Kamp 2"),
+  Forudsigelse_Ridge = c(
+    predict_ridge_kamp(lasso_ridge_flere_mdr, kamp1),
+    predict_ridge_kamp(lasso_ridge_flere_mdr, kamp2)
+  ),
+  Historisk_gns_tilskuere = c(kamp1$gennemsnit_tilskuere, kamp2$gennemsnit_tilskuere)
+)
+
+results_table
+
+```
+
+# Adgang til GitHub
+
+Adgang til Github er givet til eksaminator via privat repostiory på
+GitHub.
+
+Link til repostiory: <https://github.com/perni1606/1_semester_eksamen>

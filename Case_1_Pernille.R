@@ -41,8 +41,8 @@ ggplot(passat, aes(x = km_per_liter,
 #----------------------------------------------------
 
 pacman::p_load("tidyverse")
-             
-vffkort <- read_rds("vffkort01.rds")              
+
+vffkort <- read_rds("c:/Users/PHSXX/OneDrive/Dania Erhversakademi/Datavisualisering/GitHub/Datavisualisering_gruppe3/vffkort01.rds")
 
 str(vffkort)
 
@@ -58,6 +58,49 @@ str(vffkort_renset)
 #----------------------------------------------------
 # Visualiseringer: Tilskuertal gennem årene
 #----------------------------------------------------
+
+vffkort_summary <- vffkort_renset |> 
+  group_by(aar) |> 
+  summarise(
+    total_tilskuere = sum(tilskuere, na.rm = TRUE),
+    antal_kampe = n(),
+    middeltal = mean(tilskuere, na.rm = TRUE),
+    min_tilskuere = min(tilskuere, na.rm = TRUE),
+    max_tilskuere = max(tilskuere, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+str(vffkort_summary)
+# simpel 
+ggplot(vffkort_summary, aes(x = aar)) +
+  geom_line(aes(y = middeltal), colour = "darkgreen", linewidth = 1.2, group = 1) +
+  geom_line(aes(y = max_tilskuere), colour = "darkred", linewidth = 1.2, group = 1) +
+  geom_line(aes(y = min_tilskuere), colour = "darkblue", linewidth = 1.2, group = 1) +
+  labs(
+    x = "År",
+    y = "Antal tilskuere",
+    title = "Gns. tilskuertal gennem årene"
+  )
+# ------------------
+# test:
+ggplot(vffkort_renset, aes(x = aar, y = tilskuere)) +
+  geom_point() +
+  geom_smooth(method = "lm", colour = "green")
+
+
+# max tilskuere pr år og det gns. tilskuere tal
+ggplot(vffkort_summary, aes(x = aar)) +
+  geom_col(aes(y = max_tilskuere), alpha = 0.3) +
+  geom_line(aes(y = middeltal), colour = "darkgreen", linewidth = 1.2) +
+  scale_x_continuous(
+    name = "År",
+    breaks = unique(vffkort_summary$aar)
+  ) +
+  scale_y_continuous(
+    name = "Max tilskuere",
+    sec.axis = sec_axis(~., name = "Gennemsnitligt tilskuertal")
+  )
+
 
 # Line plot med facetter - Udviklingen for hver modstander
 ggplot(vffkort_renset, aes(x = aar, y = tilskuere)) +
@@ -148,7 +191,7 @@ ggplot(vffkort_summary, aes(x = aar)) +
     axis.title.y.right = element_text(colour = "darkred")
   )
 
-# Bar + line plot på modstander niveau - Total vs Gennemsnit
+# Bar + line plot på modstander niveau - Total vs Gennemsnit (data skal kontrolleres!!!!!)
 # Vælg modstander her:
 valgt_modstander <- "BIF"
 
